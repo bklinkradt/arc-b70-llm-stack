@@ -1,0 +1,25 @@
+### Translation
+
+**"Das Wetter war schlecht, also blieben wir zu Hause und lasen Bücher."**
+
+*(Alternative: "Das Wetter war schlecht, deshalb blieben wir zu Hause und lasen Bücher.")*
+
+---
+
+### Grammar Explanations
+
+#### 1. Verb Position and Word Order (The "V2" Rule)
+In German, the conjugated verb must occupy the **second position** in a main clause. 
+
+In the first part of the sentence (*Das Wetter war schlecht*), the verb *war* is in position 2. However, when you use a connector like **also** (so) or **deshalb** (therefore), these words occupy position 1. Because the verb must stay in position 2, the subject (*wir*) must move to position 3.
+
+*   **Structure:** [Connector] + [Verb] + [Subject] ...
+*   **Example:** *Also* (1) *blieben* (2) *wir* (3) *zu Hause...*
+
+#### 2. The Präteritum (Simple Past) Tense
+The sentence uses the *Präteritum* tense (*blieben* and *lasen*). While German speakers often use the *Perfekt* (e.g., *wir sind geblieben*) in spoken conversation, the *Präteritum* is the standard way to narrate past events in writing or formal storytelling.
+
+*   **blieben:** This is the past tense of *bleiben* (to stay). It is an irregular (strong) verb.
+*   **lasen:** This is the past tense of *lesen* (to read). It is also an irregular (strong) verb. 
+
+Note that in the *Präteritum*, the verb ending remains consistent regardless of the subject (e.g., *ich las, du lasst, wir lasen*), making it very useful for maintaining a consistent narrative flow.

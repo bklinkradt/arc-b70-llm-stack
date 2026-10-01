@@ -1,0 +1,34 @@
+# Load balancer for chat across the vLLM containers (../qwen-vllm) that llama-swap's
+# GPU layout runs: qwen-vllm (card 0) and qwen-vllm-2 (card 1) in split, qwen-vllm-tp2
+# (both cards) in tp2, and qwen-vllm alone while qwen-image holds card 1 in tp2. A
+# stopped container drops out of Docker DNS, so dials to it fail fast and Caddy retries
+# another; the health check keeps it out of rotation until vLLM has finished loading.
+{
+	admin off
+	auto_https off
+}
+
+:8000 {
+	reverse_proxy qwen-vllm:8000 qwen-vllm-2:8000 qwen-vllm-tp2:8000 {
+		# Sticky per API key: the front Caddy sets X-Affinity from the key and LiteLLM
+		# forwards it, so a session's turns land on the card holding its prefix cache.
+		# Hashing only picks among healthy cards, so a key fails over while its card is
+		# lent to qwen-image. Requests without it (Open WebUI) go to the least busy card.
+		lb_policy header X-Affinity {
+			fallback least_conn
+		}
+		# Retries only failed connections, never a request vLLM already received. Long
+		# enough to hold requests while the tp2 layout swaps qwen-vllm-tp2 for qwen-vllm
+		# around an image request (~2-3 min with no chat backend); in split, card 0 is
+		# always up, so this never waits.
+		lb_try_duration 240s
+		lb_try_interval 1s
+		health_uri /health
+		health_interval 5s
+		health_timeout 3s
+		fail_duration 10s
+		# Stream tokens as they arrive.
+		flush_interval -1
+		header_up -X-Affinity
+	}
+}

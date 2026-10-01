@@ -1,0 +1,33 @@
+TP=2 on the two Arc Pro B70s, 2026-10-01, both links PCIe Gen5 x8 (32 GT/s)
+Decode: bench.py at temperature 0. Prefill: prefill.py. Load: total completion tokens /
+wall time for bench.py 1 prose N 0 with --max-num-seqs=64. Raw output in this directory.
+
+linkbench.py (copy bandwidth, then 2-card all-reduce through torch xccl / oneCCL)
+  Host<->device copy, each card, both images: 28.7 GB/s H2D, 28.6 GB/s D2H
+  all_reduce        stock 26.27 SYCL   26.35 SYCL   fallback (CCL_ENABLE_SYCL_KERNELS=0)
+    160 KiB         15 us              13 us        95-104 us
+    1 MiB           58 us              56 us        ~295 us
+    10 MiB          26.5 GB/s          26.8 GB/s    4.2-4.4 GB/s
+    40 MiB          27.5 GB/s          27.6 GB/s    3.3 GB/s
+    160 MiB         DEVICE_LOST        28.0 GB/s    3.0 GB/s
+  Stock: xe "Check job timeout ... not started" on both cards at once, then GT resets
+  and devcoredumps; reproduced twice. 26.35: 4 runs including 3 at 50x iterations,
+  0 xe faults.
+
+Decode, tok/s           1 card   TP=2 stock+fallback   TP=2 26.35 SYCL
+  code / prose          71.3 / 54.3   69.5 / 52.0      109.0 / 82.9
+  code / prose x4 total  234 / 178     236 / 178        388 / 294
+Prefill, tok/s
+  4k / 17k / 63k        1506 / 1362 / 981   1449 / 1344 / 1142   2603 / 2369 / 1775
+Load, total tok/s (64 seqs)
+  16 / 32 concurrent    273 / 278     410 / 509        669 / 843
+  (two single cards ~ 2x the 1-card column: ~550 / ~556, not measured together)
+
+TP=2 26.35: repro.py 8 x 5 rounds (6 nocache, 2 cache): 0/40 corrupted;
+bench.py 2 code 3: 95.7 tok/s; 0 xe faults over the whole run.
+
+Layout switching through llama-swap (gpu-layout), measured after deploying:
+  split, image load: 13 s, card 0 chat stays up; vllm-2 healthy 68 s after unload
+  split -> tp2 (make mode M=tp2): qwen-vllm-tp2 healthy after 150 s
+  tp2, image load: chat request sent mid-swap held by vllm-lb, HTTP 200 after 69 s
+  tp2, image unload: chat request held, HTTP 200 after 76 s (TP=2 back)

@@ -1,0 +1,49 @@
+# Experiment: MTP draft depth on the second Arc Pro B70. A copy of vllm-2 under another
+# name, on 127.0.0.1:8002 and off llm-net, so vllm-lb (which dials qwen-vllm and
+# qwen-vllm-2 by name) never sends it user traffic. It needs the second card, so
+# llama-swap and whatever holds that card stop first. From the repo root,
+# `make mtp MTP_N=4` does that and starts this; `make mtp-down` reverts (llama-swap
+# restores the GPU layout).
+services:
+  vllm-mtp:
+    extends:
+      # Relative to the repo root: overrides resolve paths from the first -f file.
+      file: qwen-vllm/docker-compose.yml
+      service: vllm-2
+    # MTP_IMAGE tests another image with the same flags, such as the stock upstream one
+    # (vllm/vllm-openai-xpu:v0.30.0, MTP_CACHE=vllm-cache-upstream-2). Each image needs
+    # its own compile cache: MTP_CACHE names one of the volumes.
+    image: ${MTP_IMAGE:-qwen-vllm-runtime:26.35}
+    container_name: qwen-vllm-mtp
+    profiles: [mtp]
+    volumes: !override
+      - ${MODELS_DIR:-${HOME}/models}:/llm/models:ro
+      - /dev/dri/by-path:/dev/dri/by-path:ro
+      - ${MTP_CACHE:-vllm-cache-runtime-2}:/root/.cache
+    ports: !override
+      - "127.0.0.1:8002:8000"
+    networks: !override
+      - default
+    # Compose replaces `command` wholesale, so this repeats the base list with the
+    # draft depth as a variable. Keep the two in sync.
+    command: !override
+      - /llm/models/Qwen3.8-27B-INT4
+      - --served-model-name=Qwen3.8-27B
+      - --host=0.0.0.0
+      - --port=8000
+      - --limit-mm-per-prompt={"image":4,"video":0}
+      - --mm-processor-kwargs={"max_pixels":4194304}
+      - --gpu-memory-utilization=0.92
+      - --max-model-len=131072
+      - --max-num-seqs=4
+      - --max-num-batched-tokens=4096
+      - --enable-prefix-caching
+      - --speculative-config={"method":"mtp","num_speculative_tokens":${MTP_N:-3}}
+      - --reasoning-parser=qwen3
+      - --enable-auto-tool-choice
+      - --tool-call-parser=qwen3_coder
+
+volumes:
+  # Compile cache for the stock upstream image (MTP_CACHE=vllm-cache-upstream-2).
+  vllm-cache-upstream-2:
+    name: qwen-vllm_vllm-cache-upstream-2

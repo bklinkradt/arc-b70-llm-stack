@@ -1,0 +1,19 @@
+MTP depth sweep 2026-09-30 15:52:23, image qwen-vllm-runtime:26.35
+== num_speculative_tokens=3
+  up after 153s
+  code-t0        per request  71.9 tok/s
+  prose-t0       per request  53.1 tok/s
+  acceptance by position: 87% 72% 60%  mean tokens per step: 3.18
+  code-t0.7      per request  69.9 tok/s
+  code-4x        per request  57.5 tok/s   total 230 tok/s
+  prose-4x       per request  44.0 tok/s   total 176 tok/s
+  repro 1 nocache: corrupted rounds: 0/5
+  repro 2 nocache: corrupted rounds: 0/5
+  repro 3 nocache: corrupted rounds: 0/5
+  repro 4 cache: corrupted rounds: 0/5
+  repro 5 nocache: corrupted rounds: 0/5
+  repro 6 nocache: corrupted rounds: 0/5
+  repro 7 nocache: corrupted rounds: 0/5
+  repro 8 cache: corrupted rounds: 0/5
+  xe faults: none
+card returned to llama-swap 16:15:59

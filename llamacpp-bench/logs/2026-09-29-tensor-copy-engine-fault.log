@@ -1,0 +1,148 @@
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Engine memory CAT error [18]: class=bcs, logical_mask: 0x1, guc_id=14
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Engine memory CAT error [18]: class=bcs, logical_mask: 0x1, guc_id=14
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Engine memory CAT error [18]: class=bcs, logical_mask: 0x1, guc_id=14
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Engine memory CAT error [18]: class=bcs, logical_mask: 0x1, guc_id=14
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Engine memory CAT error [18]: class=bcs, logical_mask: 0x1, guc_id=14
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Engine memory CAT error [18]: class=bcs, logical_mask: 0x1, guc_id=14
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: 
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Fault response: Unsuccessful -ENOENT
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Engine reset: engine_class=bcs, logical_mask: 0x1, guc_id=14, state=0x249
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Tile0: GT0: Timedout job: seqno=288, lrc_seqno=288, guc_id=14, flags=0x20 in llama-server [143438]
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Xe device coredump has been created
+Sep 29 16:19:54 kernel: xe 0000:03:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data

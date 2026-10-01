@@ -1,0 +1,22 @@
+To find the arrival time, we need to calculate the duration of the journey and add it to the departure time.
+
+### Step 1: Calculate the travel time
+To find the time, use the formula: $\text{Time} = \frac{\text{Distance}}{\text{Speed}}$
+
+$$\text{Time} = \frac{312 \text{ km}}{96 \text{ km/h}}$$
+$$\text{Time} = 3.25 \text{ hours}$$
+
+### Step 2: Convert the decimal hours into minutes
+Since there are 60 minutes in an hour, multiply the decimal part (0.25) by 60:
+$$0.25 \times 60 = 15 \text{ minutes}$$
+So, the total travel time is **3 hours and 15 minutes**.
+
+### Step 3: Add the travel time to the departure time
+*   **Departure Time:** 14:05
+*   **Travel Duration:** + 3 hours and 15 minutes
+
+**Calculation:**
+*   Hours: $14 + 3 = 17$
+*   Minutes: $05 + 15 = 20$
+
+**Arrival Time: 17:20**

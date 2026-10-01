@@ -1,0 +1,109 @@
+# Experiment: llama.cpp's Vulkan and SYCL backends on one Arc Pro B70. Kept out of
+# ../compose.yaml on purpose, so `make up` / `make down` in the repo root never touch
+# it. It borrows the second card (PCI 08:00.0) from llama-swap; the Makefile here does
+# that and gives it back. See README.md.
+name: llamacpp-bench
+
+x-card1: &card1
+  # Only the second card's nodes, so neither backend can see card 0 (production vLLM)
+  # or the AMD iGPU. Vulkan enumerates every GPU and ignores ZE_AFFINITY_MASK.
+  # Long syntax because the PCI path contains colons.
+  devices:
+    - source: /dev/dri/by-path/pci-${CARD1_PCI:-0000:08:00.0}-card
+      target: /dev/dri/card2
+      permissions: rwm
+    - source: /dev/dri/by-path/pci-${CARD1_PCI:-0000:08:00.0}-render
+      target: /dev/dri/renderD129
+      permissions: rwm
+  group_add:
+    - "${VIDEO_GID:-39}"   # video; `getent group video render` on your host
+    - "${RENDER_GID:-105}" # render
+  volumes:
+    - ${MODELS_DIR:-${HOME}/models}:/models:ro
+  entrypoint: ["/app/llama-server"]
+  # Same flags for both backends; only the image differs.
+  # Flag and value as separate items: llama.cpp rewrites "_" to "-" in "--flag=value".
+  command: [
+    "--model", "/models/${MODEL:-Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q4_K_M.gguf}",
+    "--alias", "${ALIAS:-Qwen3.8-27B}",
+    "--host", "0.0.0.0",
+    "--port", "8080",
+    "--n-gpu-layers", "999",
+    "--ctx-size", "32768",
+    "--flash-attn", "on",
+    "--parallel", "${PARALLEL:-1}",
+    "--jinja",
+    "--metrics",
+  ]
+  environment: &spec
+    # SPEC=draft-mtp (Makefile) turns on MTP with the GGUF's own nextn head; 3 drafts
+    # like production vLLM. Default off.
+    LLAMA_ARG_SPEC_TYPE: ${SPEC:-none}
+    LLAMA_ARG_SPEC_DRAFT_N_MAX: "3"
+  restart: "no"
+
+services:
+  # Both images are the same llama.cpp build (0.5.0-dev b11243, commit fc07d781e).
+  # "full" rather than "server" images so llama-bench is available too.
+  llama-vulkan:
+    <<: *card1
+    # Ubuntu 26.04, Mesa 26.0.8 (ANV), Vulkan loader 1.4.341.
+    image: ghcr.io/ggml-org/llama.cpp:full-vulkan@sha256:19665c6ee2157cd850df969ad9ddcb7b69a71ea3d6185ca395f082ce3f273756
+    container_name: llamacpp-vulkan
+    profiles: [vulkan]
+    ports:
+      - "127.0.0.1:8090:8080"
+
+  # Same llama.cpp commit built on Fedora 44 for Mesa 26.2.x (vulkan-mesa26/Dockerfile).
+  llama-vulkan-mesa26:
+    <<: *card1
+    image: llamacpp-vulkan-mesa26:fc07d781e
+    build: vulkan-mesa26
+    container_name: llamacpp-vulkan-mesa26
+    profiles: [vulkan-mesa26]
+    ports:
+      - "127.0.0.1:8093:8080"
+
+  llama-sycl:
+    <<: *card1
+    # oneAPI 2026.1.1, compute-runtime 26.18.38308, IGC 2.34.4, Level Zero 1.32.
+    image: ghcr.io/ggml-org/llama.cpp:full-intel@sha256:95778c3c82269cf387d4fc8b83685285f1eac2299771dc6af77e74964d2f8d43
+    container_name: llamacpp-sycl
+    profiles: [sycl]
+    ports:
+      - "127.0.0.1:8091:8080"
+    environment:
+      <<: *spec
+      # Level Zero only; without this the SYCL runtime also lists the card via OpenCL.
+      ONEAPI_DEVICE_SELECTOR: level_zero:*
+      # SYCL_OPT=0 turns off the weight reorder (Q4_0, Q8_0, Q2_K-Q6_K), the workaround
+      # for the Battlemage output-corruption reports. Default 1, as in llama.cpp.
+      GGML_SYCL_ENABLE_OPT: ${SYCL_OPT:-1}
+
+  # Both cards, for llama.cpp's multi-GPU split modes (make split-bench, sycl-2card).
+  # One process drives both cards and copies between them itself; oneCCL isn't
+  # involved. Needs production chat stopped: make take-both / release-both.
+  llama-sycl-2card:
+    <<: *card1
+    image: ghcr.io/ggml-org/llama.cpp:full-intel@sha256:95778c3c82269cf387d4fc8b83685285f1eac2299771dc6af77e74964d2f8d43
+    container_name: llamacpp-sycl-2card
+    profiles: [sycl2]
+    devices:
+      - source: /dev/dri/by-path/pci-${CARD0_PCI:-0000:03:00.0}-card
+        target: /dev/dri/card1
+        permissions: rwm
+      - source: /dev/dri/by-path/pci-${CARD0_PCI:-0000:03:00.0}-render
+        target: /dev/dri/renderD128
+        permissions: rwm
+      - source: /dev/dri/by-path/pci-${CARD1_PCI:-0000:08:00.0}-card
+        target: /dev/dri/card2
+        permissions: rwm
+      - source: /dev/dri/by-path/pci-${CARD1_PCI:-0000:08:00.0}-render
+        target: /dev/dri/renderD129
+        permissions: rwm
+    ports:
+      - "127.0.0.1:8092:8080"
+    environment:
+      <<: *spec
+      LLAMA_ARG_SPLIT_MODE: ${SPLIT:-tensor}
+      ONEAPI_DEVICE_SELECTOR: level_zero:*

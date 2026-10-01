@@ -1,0 +1,7 @@
+llama-swap
+qwen-vllm-2
+time="2026-09-30T14:55:47+02:00" level=warning msg="volume \"qwen-vllm_vllm-cache-upstream-2\" already exists but was created for project \"qwen-vllm\" (expected \"local-serve\"). Use `external: true` to use an existing volume"
+ Container qwen-vllm-mtp Creating 
+ Container qwen-vllm-mtp Created 
+ Container qwen-vllm-mtp Starting 
+ Container qwen-vllm-mtp Started 

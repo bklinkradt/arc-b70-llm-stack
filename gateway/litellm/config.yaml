@@ -1,0 +1,46 @@
+# LiteLLM proxy: the only way in from outside. Every /v1 request needs a virtual key
+# (see README). Chat goes to vllm-lb, which spreads it over the vLLM instances that are
+# up; images go to llama-swap, which frees the second B70 for qwen-image.
+
+model_list:
+  - model_name: Qwen3.8-27B
+    litellm_params:
+      model: hosted_vllm/Qwen3.8-27B
+      api_base: http://vllm-lb:8000/v1
+      api_key: none  # vLLM runs without a key behind the gateway
+      # A vLLM instance always runs, except for ~70 s at each image swap in the tp2
+      # layout, when vllm-lb holds the request; this covers that and long outputs.
+      timeout: 900
+      stream_timeout: 900
+    model_info:
+      mode: chat
+      max_input_tokens: 131072
+      supports_vision: true
+      supports_function_calling: true
+      supports_reasoning: true
+
+  - model_name: qwen-image
+    litellm_params:
+      model: openai/qwen-image
+      api_base: http://llama-swap:8080/v1
+      api_key: none
+      # Swap in (evict the chat container on card 1, load qwen-image: ~1 min) plus up
+      # to n renders at 2048px.
+      timeout: 900
+    model_info:
+      mode: image_generation
+
+litellm_settings:
+  model_group_settings:
+    # Passes the client's x- headers through for chat, including X-Affinity (set by
+    # the front Caddy from the API key), which vllm-lb uses to keep each key on one card.
+    forward_client_headers_to_llm_api:
+      - Qwen3.8-27B
+
+router_settings:
+  # A retry after a timeout would render the same image again on a busy GPU.
+  num_retries: 0
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL

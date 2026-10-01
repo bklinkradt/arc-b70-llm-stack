@@ -1,0 +1,13 @@
+== TP=2, 26.35, SYCL kernels  12:53:43
+-- bench 3 code 1 (temp 0)
+avg decode: 109.0 tok/s
+-- bench 3 prose 1 (temp 0)
+avg decode: 82.9 tok/s
+-- bench 2 code 4 (temp 0)
+avg decode: 97.0 tok/s
+-- bench 2 prose 4 (temp 0)
+avg decode: 73.4 tok/s
+-- prefill
+prompt   4229 tok  time   1.62s  prefill    2603 tok/s
+prompt  16797 tok  time   7.09s  prefill    2369 tok/s
+prompt  62971 tok  time  35.48s  prefill    1775 tok/s

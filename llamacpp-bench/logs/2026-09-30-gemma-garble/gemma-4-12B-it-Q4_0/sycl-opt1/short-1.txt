@@ -1,0 +1,55 @@
+A hash map (or dictionary in Python) works by taking a **key**, running it through a **hash function** to get an integer, and using that integer as an **index** in an underlying array.
+
+A **collision** occurs when two different keys produce the same index (e.g., `hash("key1") % array_size == hash("key2") % array_size`).
+
+There are two primary ways to handle this:
+
+### 1. Separate Chaining (Most Common)
+Instead of storing the value directly in the array slot, each slot contains a **linked list** (or another dynamic list). If multiple keys map to the same index, they are all stored in that list. When looking up a key, the map finds the correct index and then traverses the list to find the matching key.
+
+### 2. Open Addressing (Linear Probing)
+If a collision occurs, the map looks for the next available empty slot in the array. If that's full, it looks at the next one, and so on, until it finds an empty space.
+
+---
+
+### Python Example: Separate Chaining
+Since Python's built-in `dict` is highly optimized (using a complex version of open addressing), we can write a simple class to demonstrate **Separate Chaining** clearly.
+
+```python
+class SimpleHashMap:
+    def __init__(self, size=10):
+        self.size = size
+        # Create an array of empty lists (the "buckets")
+        self.table = [[] for _ in range(self.size)]
+
+    def _get_hash(self, key):
+        # A simple hash function: sum of ASCII values % table size
+        return sum(ord(char) for char in str(key)) % self.size
+
+    def put(self, key, value):
+        hash_idx = self._get_hash(key)
+        bucket = self.table[hash_idx]
+
+        # Check if key already exists in the bucket to update it
+        for i, (k, v) in enumerate(bucket):
+            if k == key:
+                bucket[i] = (key, value)
+                return
+
+        # If key doesn't exist, append the new key-value pair
+        bucket.append((key, value))
+
+    def get(self, key):
+        hash_idx = self._get_hash(key)
+        bucket = self.table[hash_idx]
+
+        for k, v in bucket:
+            if k == key:
+                return v
+        return "Key not found"
+
+# --- Demonstration ---
+my_map = SimpleHashMap(size=5)
+
+# These two keys will collide because their hash sums are the same
+# "abc" = 97+9

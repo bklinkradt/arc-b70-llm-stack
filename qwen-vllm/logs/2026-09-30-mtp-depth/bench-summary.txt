@@ -1,0 +1,6 @@
+                               depth 2   depth 3   depth 4
+Code, temp 0, 1 request           63.7      72.2      75.1
+Prose, temp 0, 1 request          52.4      53.4      51.3
+Code, temp 0.7, 1 request         61.1      69.6      72.5
+Code, 4 concurrent, total        211.8     232.3     237.9
+Prose, 4 concurrent, total       174.9     174.7     162.1

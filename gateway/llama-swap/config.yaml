@@ -1,0 +1,28 @@
+# llama-swap: loads on-demand models, such as qwen-image (../qwen-image) on the second
+# B70, when a request asks for them. run-container and stop-container hand the cards
+# over through gpu-layout: loading qwen-image stops whatever chat container holds card 1
+# (qwen-vllm-2, or qwen-vllm-tp2 in the tp2 layout, which qwen-vllm on card 0 then
+# replaces), and unloading it restores the layout. Chat doesn't pass through here:
+# vllm-lb spreads it over the vLLM instances that are up. A new on-demand model needs
+# a container, a card line in layouts/layouts.conf and an entry here.
+# Reference: https://github.com/mostlygeek/llama-swap/blob/v260/docs/config.example.yaml
+
+healthCheckTimeout: 900
+logLevel: info
+# Covers `docker stop -t 30` in stop-container before llama-swap force-kills it.
+unloadTimeout: 60
+
+models:
+  "qwen-image":
+    name: Qwen-Image-2.1
+    # In-flight chat on an evicted container is cut off (vllm-lb only retries new
+    # connections). In split, card 0 keeps serving; in tp2, chat waits in vllm-lb
+    # until qwen-vllm on card 0 is up.
+    cmd: /usr/local/bin/run-container qwen-image
+    cmdStop: /usr/local/bin/stop-container qwen-image
+    proxy: http://qwen-image:7860
+    checkEndpoint: /v1/models
+    # Give the card back to chat after 10 idle minutes (vLLM takes ~2-3 min to reload).
+    ttl: 600
+    # The app renders one image at a time; this bounds the queue behind it.
+    concurrencyLimit: 4

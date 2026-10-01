@@ -1,0 +1,226 @@
+name: qwen-vllm
+
+services:
+  # Three containers serve the same model; ../gateway's llama-swap runs the ones the
+  # GPU layout asks for (../gateway/llama-swap/layouts/layouts.conf, `make mode`) and
+  # vllm-lb spreads chat over whichever are up:
+  #   vllm      card 0 (PCI 03:00.0)   split layout, and tp2 while qwen-image has card 1
+  #   vllm-2    card 1 (PCI 08:00.0)   split layout, unless qwen-image has card 1
+  #   vllm-tp2  both cards             tp2 layout
+  # The managed profile keeps `docker compose up` from starting them behind llama-swap's
+  # back; `make up` in the repo root creates them.
+  vllm: &vllm
+    # Upstream vLLM v0.30.0 XPU with Intel's compute runtime 26.35 / IGC 2.41.5
+    # (runtime-26.35/Dockerfile). The stock image's runtime 26.27 / IGC 2.38.2 hangs
+    # both cards in oneCCL's SYCL all-reduce kernels, which TP=2 needs; one card runs
+    # the same on both (README.md). Upstream replaced intel/llm-scaler-vllm:0.26.0-b2,
+    # whose kernels lack the GDN conv-state fix (vllm-xpu-kernels #544/#545) and
+    # corrupt long MTP generations when prefix caching is on (commit 8a9aa20).
+    build: ./runtime-26.35
+    image: qwen-vllm-runtime:26.35
+    container_name: qwen-vllm
+    profiles: [managed]
+    # llama-swap owns the lifecycle: auto-restart would bring a container back next
+    # to the one that replaced it on its card and run the card out of memory.
+    restart: "no"
+    # oneCCL needs the full /dev/dri tree (including by-path). Level Zero only
+    # enumerates Intel GPUs, in PCI order, so the AMD iGPU is never visible to vLLM
+    # and ZE_AFFINITY_MASK picks the card: 0 = 03:00.0, 1 = 08:00.0.
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "${VIDEO_GID:-39}"   # video; `getent group video render` on your host
+      - "${RENDER_GID:-105}" # render
+    shm_size: 32g
+    # Localhost only (bench.py, repro.py): remote access goes through the gateway,
+    # which adds API keys.
+    ports:
+      - "127.0.0.1:8000:8000"
+    networks:
+      - default
+      - llm-net
+    environment:
+      ZE_AFFINITY_MASK: "0"
+      # XPU graphs tested (llm-scaler): no decode gain (47.9 vs 47.5 tok/s) and
+      # +2.5 GiB of unbudgeted VRAM. With MTP they also pad state slots with block
+      # 0, which the SYCL GDN kernels don't skip. Leave disabled.
+      VLLM_XPU_ENABLE_XPU_GRAPH: "0"
+      VLLM_WORKER_MULTIPROC_METHOD: spawn
+    volumes:
+      - ${MODELS_DIR:-${HOME}/models}:/llm/models:ro
+      # Device passthrough doesn't create the by-path symlinks oneCCL scans for.
+      - /dev/dri/by-path:/dev/dri/by-path:ro
+      # Persist torch.compile / kernel caches so restarts skip recompilation.
+      # One volume per image: compiled kernels must not carry over between them.
+      # vllm-tp2 shares this one; the two never run at the same time.
+      - vllm-cache-runtime:/root/.cache
+    entrypoint: ["vllm", "serve"]
+    command:
+      - /llm/models/Qwen3.8-27B-INT4
+      - --served-model-name=Qwen3.8-27B
+      - --host=0.0.0.0
+      - --port=8000
+      # Image input. Cap images at ~4 MP (4096 visual tokens; the model default is
+      # ~16 MP) and disable video so the encoder's memory reservation stays small.
+      - --limit-mm-per-prompt={"image":4,"video":0}
+      - --mm-processor-kwargs={"max_pixels":4194304}
+      - --gpu-memory-utilization=0.92
+      - --max-model-len=131072
+      - --max-num-seqs=4
+      - --max-num-batched-tokens=4096
+      # Reuse already-processed conversation prefixes between turns.
+      - --enable-prefix-caching
+      # MTP speculative decoding, 3 draft tokens: ~68 / 50 tok/s code / prose vs
+      # ~31 without. Validated on this image with repro.py (0/40 corrupted,
+      # 2026-09-26) and 3 concurrent requests. Re-run repro.py (see README) after
+      # any image change: on llm-scaler 0.26.0-b2 this corrupted ~1 in 5 replies.
+      - --speculative-config={"method":"mtp","num_speculative_tokens":3}
+      - --reasoning-parser=qwen3
+      - --enable-auto-tool-choice
+      - --tool-call-parser=qwen3_coder
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 600s
+
+  # Same server on the second card, which it shares with qwen-image.
+  vllm-2:
+    <<: *vllm
+    container_name: qwen-vllm-2
+    ports:
+      - "127.0.0.1:8001:8000"
+    environment:
+      ZE_AFFINITY_MASK: "1"
+      VLLM_XPU_ENABLE_XPU_GRAPH: "0"
+      VLLM_WORKER_MULTIPROC_METHOD: spawn
+    volumes:
+      - ${MODELS_DIR:-${HOME}/models}:/llm/models:ro
+      - /dev/dri/by-path:/dev/dri/by-path:ro
+      # Separate from vllm's cache so the two never write the same files at once.
+      - vllm-cache-runtime-2:/root/.cache
+
+  # Same server across both cards (tensor parallel), measured 2026-10-01 against one
+  # card (README.md): 109 vs 71 tok/s on code, prefill ~1.75x, 843 vs ~556 tok/s total
+  # for vllm + vllm-2 at 32 concurrent requests. Same host port as vllm, which never
+  # runs alongside it, so bench.py and repro.py work in either layout.
+  vllm-tp2:
+    <<: *vllm
+    container_name: qwen-vllm-tp2
+    environment:
+      ZE_AFFINITY_MASK: "0,1"
+      # oneCCL's SYCL all-reduce kernels (the default, set here to be explicit): ~13 us
+      # per decode all-reduce and ~28 GB/s, vs ~100 us and ~4 GB/s for the fallback (0).
+      # They need this image's runtime; on 26.27 they hang both cards.
+      CCL_ENABLE_SYCL_KERNELS: "1"
+      VLLM_XPU_ENABLE_XPU_GRAPH: "0"
+      VLLM_WORKER_MULTIPROC_METHOD: spawn
+    # Compose replaces `command` wholesale, and `vllm serve` requires the model as its
+    # first argument, so this repeats vllm's list with the TP flag and twice the
+    # sequences (one server now carries what vllm and vllm-2 did). Keep them in sync.
+    command:
+      - /llm/models/Qwen3.8-27B-INT4
+      - --tensor-parallel-size=2
+      - --served-model-name=Qwen3.8-27B
+      - --host=0.0.0.0
+      - --port=8000
+      - --limit-mm-per-prompt={"image":4,"video":0}
+      - --mm-processor-kwargs={"max_pixels":4194304}
+      - --gpu-memory-utilization=0.92
+      - --max-model-len=131072
+      - --max-num-seqs=8
+      - --max-num-batched-tokens=4096
+      - --enable-prefix-caching
+      - --speculative-config={"method":"mtp","num_speculative_tokens":3}
+      - --reasoning-parser=qwen3
+      - --enable-auto-tool-choice
+      - --tool-call-parser=qwen3_coder
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:v0.11.4
+    container_name: qwen-webui
+    restart: unless-stopped
+    ports:
+      - "3000:8080"
+    networks:
+      - default
+      - llm-net
+    environment:
+      # ../gateway's load balancer over both vLLM instances.
+      OPENAI_API_BASE_URL: http://vllm-lb:8000/v1
+      OPENAI_API_KEY: none  # vLLM runs without an API key
+      ENABLE_OLLAMA_API: "false"
+      DEFAULT_MODELS: Qwen3.8-27B
+    volumes:
+      # Accounts, chats, uploaded files and the session secret key.
+      - open-webui-data:/app/backend/data
+
+  # --- Monitoring: Grafana dashboard at http://<host>:3001 ---
+
+  # Publishes B70 power/clock/temperature/VRAM/bandwidth from xpu-smi for
+  # Prometheus. Reuses the vLLM image (already on disk) because it ships xpu-smi 2.x.
+  gpu-exporter:
+    image: vllm/vllm-openai-xpu:v0.30.0@sha256:fc0e112afb64e3a06fe8daff34652435822a629412f38efce8f0f67a46636b8d
+    container_name: qwen-gpu-exporter
+    restart: unless-stopped
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "${VIDEO_GID:-39}"   # video; `getent group video render` on your host
+      - "${RENDER_GID:-105}" # render
+    environment:
+      ZE_AFFINITY_MASK: "0"
+    volumes:
+      - /dev/dri/by-path:/dev/dri/by-path:ro
+      - ./monitoring/xpu_exporter.py:/xpu_exporter.py:ro
+    entrypoint: ["python3", "/xpu_exporter.py"]
+
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    container_name: qwen-prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+
+  grafana:
+    image: grafana/grafana:13.2.2
+    container_name: qwen-grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    ports:
+      - "3001:3000"
+    environment:
+      # Anyone on the LAN can view dashboards; log in as admin to edit.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/vllm.json
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+
+networks:
+  # Shared with the gateway stack; the root Makefile creates it.
+  llm-net:
+    external: true
+
+# Fixed names so the data survives running from the root compose project.
+volumes:
+  vllm-cache-runtime:
+    name: qwen-vllm_vllm-cache-runtime
+  vllm-cache-runtime-2:
+    name: qwen-vllm_vllm-cache-runtime-2
+  open-webui-data:
+    name: qwen-vllm_open-webui-data
+  prometheus-data:
+    name: qwen-vllm_prometheus-data
+  grafana-data:
+    name: qwen-vllm_grafana-data

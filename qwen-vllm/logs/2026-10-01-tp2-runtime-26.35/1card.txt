@@ -1,0 +1,13 @@
+== 1 card (card 0, Gen5)  11:22:50
+-- bench 3 code 1 (temp 0)
+avg decode: 71.3 tok/s
+-- bench 3 prose 1 (temp 0)
+avg decode: 54.3 tok/s
+-- bench 2 code 4 (temp 0)
+avg decode: 58.4 tok/s
+-- bench 2 prose 4 (temp 0)
+avg decode: 44.6 tok/s
+-- prefill
+prompt   4245 tok  time   2.82s  prefill    1506 tok/s
+prompt  16847 tok  time  12.37s  prefill    1362 tok/s
+prompt  62955 tok  time  64.15s  prefill     981 tok/s

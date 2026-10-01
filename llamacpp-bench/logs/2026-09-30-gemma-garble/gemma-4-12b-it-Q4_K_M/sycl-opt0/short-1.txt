@@ -1,0 +1,52 @@
+A hash map (or dictionary) works by using a **hash function** to turn a key (like a string or integer) into an index in an underlying array.
+
+A **collision** occurs when two different keys produce the exact same index. Since an array slot can only hold one piece of data at a time, the hash map must have a strategy to store both.
+
+There are two primary ways to handle this:
+
+### 1. Separate Chaining (Most Common)
+Instead of storing the value directly in the array slot, each slot contains a **linked list** (or another list). If multiple keys map to the same index, they are simply appended to that list.
+*   **Pros:** Simple to implement; the map never "fills up" (it just gets slower).
+*   **Cons:** If many keys map to one slot, performance degrades from $O(1)$ to $O(n)$.
+
+### 2. Open Addressing (e.g., Linear Probing)
+If a collision occurs, the hash map looks for the next available empty slot in the array.
+*   **Pros:** Better cache locality (data is physically close together).
+*   **Cons:** Can lead to "clustering" where long chains of occupied slots slow down the search.
+
+---
+
+### Python Example: Separate Chaining
+Python's built-in `dict` uses a highly optimized version of open addressing, but here is a simplified version using **Separate Chaining** to show how collisions are handled manually.
+
+```python
+class SimpleHashMap:
+    def __init__(self, size=10):
+        self.size = size
+        # Create an array of empty lists (Separate Chaining)
+        self.table = [[] for _ in range(self.size)]
+
+    def _get_hash(self, key):
+        # A simple hash function: return index based on key's hash
+        return hash(key) % self.size
+
+    def put(self, key, value):
+        index = self._get_hash(key)
+        # Check if key already exists in the list at this index
+        for i, (k, v) in enumerate(self.table[index]):
+            if k == key:
+                self.table[index][i] = (key, value) # Update existing
+                return
+        
+        # If key doesn't exist, append the new key-value pair
+        self.table[index].append((key, value))
+
+    def get(self, key):
+        index = self._get_hash(key)
+        for k, v in self.table[index]:
+            if k == key:
+                return v
+        return "Key not found"
+
+# --- Demonstration ---
+my_map = SimpleHashMap(size=5

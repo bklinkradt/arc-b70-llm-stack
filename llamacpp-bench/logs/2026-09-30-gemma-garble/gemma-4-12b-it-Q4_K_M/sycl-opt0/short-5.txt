@@ -1,0 +1,48 @@
+To solve this problem, we need to use a **Window Function**. Specifically, the `ROW_NUMBER()` function is the standard way to rank items within a specific group (in this case, grouping by customer).
+
+### The SQL Query
+
+Assuming you have a table named `Orders` with columns `CustomerID`, `OrderID`, and `OrderDate`.
+
+```sql
+WITH RankedOrders AS (
+    SELECT 
+        CustomerID, 
+        OrderID, 
+        OrderDate,
+        ROW_NUMBER() OVER (
+            PARTITION BY CustomerID 
+            ORDER BY OrderDate DESC
+        ) AS OrderRank
+    FROM Orders
+)
+SELECT 
+    CustomerID, 
+    OrderID, 
+    OrderDate
+FROM RankedOrders
+WHERE OrderRank <= 3
+ORDER BY CustomerID, OrderRank;
+```
+
+---
+
+### How it works: Step-by-Step
+
+The query is broken into two main parts: the **Common Table Expression (CTE)** and the **Final Selection**.
+
+#### 1. The CTE (`RankedOrders`)
+This part creates a temporary result set where every order is assigned a number based on its recency.
+
+*   **`ROW_NUMBER()`**: This function assigns a unique sequential integer to rows.
+*   **`PARTITION BY CustomerID`**: This is the most important part. It tells the database to "restart" the numbering for every unique customer. Instead of numbering all orders in the table from 1 to 1,000, it numbers Customer A's orders (1, 2, 3...), then Customer B's orders (1, 2, 3...), and so on.
+*   **`ORDER BY OrderDate DESC`**: This tells the database *how* to decide who gets number 1. By sorting by date in descending order, the most recent order gets rank `1`, the second most recent gets rank `2`, etc.
+
+#### 2. The Final Selection
+Once the CTE has finished "tagging" every order with a rank, the outer query filters the results.
+
+*   **`WHERE OrderRank <= 3`**: This discards any order that isn't among the top three for that specific customer.
+*   **`ORDER BY CustomerID, OrderRank`**: This simply organizes the final output so that all of one customer's three orders appear together in a readable list.
+
+### Complexity Note
+If a customer has two orders with the exact same timestamp and you want to include both (even if that results in more than 3 rows), you would swap `ROW_NUMBER()` for `RANK()` or `DENSE_RANK()`. However, for "the three most recent," `ROW_NUMBER()` is the standard choice.

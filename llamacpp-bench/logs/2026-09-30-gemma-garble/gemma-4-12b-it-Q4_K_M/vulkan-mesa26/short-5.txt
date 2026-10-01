@@ -1,0 +1,46 @@
+To solve this problem, we need to use a **Window Function**. Specifically, the `ROW_NUMBER()` function is the standard way to rank items within a specific group (in this case, grouping by customer).
+
+### The SQL Query
+
+Assuming you have a table named `Orders` with columns `CustomerID`, `OrderID`, and `OrderDate`.
+
+```sql
+WITH RankedOrders AS (
+    SELECT 
+        CustomerID, 
+        OrderID, 
+        OrderDate,
+        ROW_NUMBER() OVER (
+            PARTITION BY CustomerID 
+            ORDER BY OrderDate DESC
+        ) AS OrderRank
+    FROM Orders
+)
+SELECT 
+    CustomerID, 
+    OrderID, 
+    OrderDate
+FROM RankedOrders
+WHERE OrderRank <= 3;
+```
+
+---
+
+### How it works: Step-by-Step
+
+The query uses a **Common Table Expression (CTE)** named `RankedOrders` to organize the data before filtering it. Here is the breakdown:
+
+#### 1. The Window Function (`ROW_NUMBER()`)
+This is the engine of the query. It assigns a sequential integer to rows based on a specific logic:
+*   **`PARTITION BY CustomerID`**: This tells the database to "restart" the numbering for every unique customer. Instead of numbering all orders in the table from 1 to 1,000, it numbers orders for Customer A (1, 2, 3...), then starts over for Customer B (1, 2, 3...).
+*   **`ORDER BY OrderDate DESC`**: This ensures that the most recent date gets the number `1`, the second most recent gets `2`, and so on.
+
+#### 2. The CTE (`WITH RankedOrders AS ...`)
+SQL does not allow you to use a window function directly in a `WHERE` clause (e.g., you cannot say `WHERE ROW_NUMBER() <= 3`). 
+By putting the logic inside a CTE, we create a temporary result set where every order now has a "rank" attached to it.
+
+#### 3. The Final Selection
+The outer query simply looks at that temporary list and filters for any row where the rank is **3 or less**. This effectively discards the older orders and keeps only the three most recent ones for every customer.
+
+### Performance Tip
+If your `Orders` table is very large, this query will run significantly faster if you have a **composite index** on `(CustomerID, OrderDate)`. This allows the database to find the most recent orders for each customer without scanning the entire table.

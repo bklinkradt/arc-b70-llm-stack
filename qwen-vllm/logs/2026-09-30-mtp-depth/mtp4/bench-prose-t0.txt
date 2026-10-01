@@ -1,0 +1,6 @@
+TTFT  0.15s  tokens  855  decode  50.8 tok/s
+TTFT  0.15s  tokens  849  decode  51.9 tok/s
+TTFT  0.15s  tokens  855  decode  50.8 tok/s
+TTFT  0.15s  tokens  920  decode  51.4 tok/s
+TTFT  0.15s  tokens  852  decode  51.5 tok/s
+avg decode: 51.3 tok/s

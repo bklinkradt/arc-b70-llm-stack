@@ -1,0 +1,53 @@
+To accomplish this, the most efficient way is to use the `find` command to locate files, `du` to calculate sizes, `sort` to order them, and `head` to limit the results.
+
+Here is a robust script to do this:
+
+```bash
+#!/bin/bash
+
+# Check if a directory was provided, otherwise use the current directory
+TARGET_DIR="${1:-.}"
+
+# Check if the provided path is a valid directory
+if [[ ! -d "$TARGET_DIR" ]]; then
+    echo "Error: $TARGET_DIR is not a valid directory."
+    exit 1
+fi
+
+echo "Finding the 10 largest files in: $TARGET_DIR"
+echo "-----------------------------------------------"
+
+# Explanation of the command:
+# find: looks for files (-type f) in the target directory
+# -exec du -h: runs 'disk usage' in human-readable format on every file found
+# sort -rh: sorts the results in Reverse order (largest first) and Human-readable format
+# head -n 10: takes the top 10 results
+find "$TARGET_DIR" -type f -exec du -h {} + 2>/dev/null | sort -rh | head -n 10
+```
+
+### How to use it:
+
+1.  **Create the file:**
+    ```bash
+    nano find_large_files.sh
+    ```
+2.  **Paste the code above** into the editor and save it.
+3.  **Make it executable:**
+    ```bash
+    chmod +x find_large_files.sh
+    ```
+4.  **Run it:**
+    You can run it on the current directory:
+    ```bash
+    ./find_large_files.sh
+    ```
+    Or specify a specific path:
+    ```bash
+    ./find_large_files.sh /var/log
+    ```
+
+### Key features of this script:
+*   **`2>/dev/null`**: This hides "Permission Denied" errors that often occur when scanning system directories.
+*   **`-type f`**: Ensures the script only looks at files, ignoring directory sizes.
+*   **`sort -rh`**: The `-h` flag is crucial; it tells `sort` to understand that `1G` is larger than `100M`. Without it, `sort` would treat them as plain text and put `100M` first.
+*   **`"${1:-.}"`**: This is a bash parameter expansion that defaults to the current directory (`.`) if no argument is provided.

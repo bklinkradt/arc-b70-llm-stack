@@ -1,0 +1,13 @@
+TTFT  0.32s  tokens 1024  decode  62.6 tok/s
+TTFT  0.56s  tokens 1024  decode  59.0 tok/s
+TTFT  0.56s  tokens 1024  decode  59.0 tok/s
+TTFT  0.56s  tokens 1024  decode  59.0 tok/s
+TTFT  0.33s  tokens 1024  decode  58.5 tok/s
+TTFT  0.38s  tokens 1024  decode  59.5 tok/s
+TTFT  0.38s  tokens 1024  decode  59.0 tok/s
+TTFT  0.39s  tokens 1024  decode  59.0 tok/s
+TTFT  0.31s  tokens 1024  decode  58.8 tok/s
+TTFT  0.30s  tokens 1024  decode  59.4 tok/s
+TTFT  0.46s  tokens 1024  decode  59.9 tok/s
+TTFT  0.46s  tokens 1024  decode  59.9 tok/s
+avg decode: 59.5 tok/s

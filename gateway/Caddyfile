@@ -1,0 +1,63 @@
+{
+	email {$ACME_EMAIL}
+	servers {
+		# 443/udp isn't published, so don't advertise HTTP/3.
+		protocols h1 h2
+	}
+}
+
+# Tags each request with the last 8 characters of the caller's API key (OpenAI clients
+# send it as Authorization: Bearer, Anthropic clients such as Claude Code as x-api-key).
+# LiteLLM forwards X-Affinity to vllm-lb, which hashes on it so each key sticks to one
+# card and keeps hitting that card's prefix cache. A client-sent X-Affinity is
+# overwritten, and a request without a key never gets past LiteLLM anyway.
+(affinity) {
+	@bearer header_regexp bearer Authorization ^Bearer\s+\S*(\S{8})$
+	request_header @bearer X-Affinity {re.bearer.1}
+	@apikey header_regexp apikey X-Api-Key ^\S*(\S{8})$
+	request_header @apikey X-Affinity {re.apikey.1}
+}
+
+# LAN and Tailscale access by IP or hostname (http://<server LAN IP>/v1, http://<hostname>/v1):
+# plain HTTP, since there's no certificate for an IP (Tailscale encrypts its own traffic).
+# The full LiteLLM surface, LAN and tailnet (100.64.0.0/10) clients only; port 80 is forwarded
+# from the internet, which gets a 404 here. Requests for {$DOMAIN} still match the site
+# below (its HTTP->HTTPS redirect is more specific than this catch-all).
+http:// {
+	import affinity
+	@lan remote_ip 192.168.0.0/16 10.0.0.0/8 100.64.0.0/10
+	handle @lan {
+		request_body {
+			max_size 64MB
+		}
+		reverse_proxy litellm:4000
+	}
+	handle {
+		respond 404
+	}
+}
+
+{$DOMAIN} {
+	import affinity
+
+	# Model API: open to the internet, LiteLLM checks the API key on every request.
+	@api path /v1/* /health/liveliness
+	handle @api {
+		request_body {
+			max_size 64MB # image edits upload a picture
+		}
+		# No response timeout: a cold vLLM start or a 2048px image can take minutes.
+		# Streaming (SSE) responses are flushed immediately.
+		reverse_proxy litellm:4000
+	}
+
+	# Everything else is LiteLLM's admin surface (/ui, /key/*, /user/*, /team/*, ...):
+	# LAN only, and it doesn't exist as far as the internet can tell.
+	@wan not remote_ip 192.168.0.0/16 10.0.0.0/8 100.64.0.0/10
+	handle @wan {
+		respond 404
+	}
+	handle {
+		reverse_proxy litellm:4000
+	}
+}

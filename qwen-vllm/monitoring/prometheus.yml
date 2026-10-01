@@ -1,0 +1,13 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: vllm
+    static_configs:
+      # Only the containers the GPU layout runs are up (../gateway/llama-swap).
+      - targets: ["vllm:8000", "vllm-2:8000", "vllm-tp2:8000"]
+
+  - job_name: gpu
+    static_configs:
+      - targets: ["gpu-exporter:9101"]

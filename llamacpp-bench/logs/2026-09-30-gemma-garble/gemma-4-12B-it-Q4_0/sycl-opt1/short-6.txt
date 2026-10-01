@@ -1,0 +1,23 @@
+### Translation
+**"Das Wetter war schlecht, deshalb blieben wir zu Hause und lasen Bücher."**
+
+*(Alternative common version: "Das Wetter war schlecht, also blieben wir zu Hause und haben Bücher gelesen.")*
+
+---
+
+### Grammar Explanations
+
+#### 1. Word Order with "deshalb" (Conjunctional Adverbs)
+In the sentence, **"deshalb"** means "therefore" or "that's why." Unlike some conjunctions (like *und* or *oder*), *deshalb* is a **conjunctive adverb**. 
+
+In German, these types of adverbs occupy **Position 1** in the main clause. Because the verb must always be in **Position 2** (the V2 rule), the subject must move to the position immediately following the verb.
+*   **Structure:** [Cause] + **deshalb** (Pos 1) + **blieben** (Verb/Pos 2) + **wir** (Subject) + [Rest of sentence].
+*   *Common mistake:* Placing the subject before "deshalb" (e.g., *...deshalb wir blieben*), which is incorrect in standard German.
+
+#### 2. Präteritum vs. Perfekt (Past Tenses)
+In the translation provided, I used the **Präteritum** (Simple Past) tense: *blieben* (stayed) and *lasen* (read). 
+
+*   **Präteritum:** This is the standard tense for written stories, news, and formal reports. It is the "literary" past.
+*   **Perfekt:** In everyday spoken German, people almost always use the Perfekt tense (*wir sind zu Hause geblieben und haben Bücher gelesen*). 
+
+If you are writing a story, use the **Präteritum** (as shown in the translation). If you are speaking to a friend, the **Perfekt** is more natural.

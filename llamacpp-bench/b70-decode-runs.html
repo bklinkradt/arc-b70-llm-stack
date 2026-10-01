@@ -1,0 +1,224 @@
+<title>B70 Decode Runs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one narrow engineering-report column; charts first, then the full table and method. */
+:root {
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --ink: #111418;
+  --ink-2: #4a505a;
+  --ink-3: #7a808a;
+  --rule: #e3e6eb;
+  --grid: #eef0f3;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --warn: #b3261e;
+  --chip: #eef1f5;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121417; --surface: #1a1c20; --ink: #f2f3f5; --ink-2: #b9bec7; --ink-3: #868c96;
+    --rule: #2c3036; --grid: #24272c; --series-1: #3987e5; --series-2: #d95926;
+    --warn: #f08b82; --chip: #262a30; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #121417; --surface: #1a1c20; --ink: #f2f3f5; --ink-2: #b9bec7; --ink-3: #868c96;
+  --rule: #2c3036; --grid: #24272c; --series-1: #3987e5; --series-2: #d95926;
+  --warn: #f08b82; --chip: #262a30; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.55 var(--font-body); padding: 0 16px; }
+main { max-width: 880px; margin: 0 auto; padding-block: 40px 64px; display: grid; gap: 28px; }
+header { display: grid; gap: 8px; }
+.eyebrow { font: 500 12px var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+h1 { font-size: 30px; line-height: 1.15; margin: 0; font-weight: 600; text-wrap: balance; }
+h2 { font-size: 18px; margin: 0; font-weight: 600; text-wrap: balance; }
+p { margin: 0; max-width: 68ch; color: var(--ink-2); }
+.verdict { color: var(--ink); }
+section.card { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 20px; display: grid; gap: 14px; min-width: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
+.chart { position: relative; min-width: 0; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart text { font-family: var(--font-body); }
+.tick { fill: var(--ink-3); font: 11px var(--font-mono); }
+.rowlabel { fill: var(--ink); font-size: 13px; font-weight: 500; }
+.rowsub { fill: var(--ink-3); font: 11px var(--font-mono); }
+.val { fill: var(--ink-2); font: 11px var(--font-mono); font-variant-numeric: tabular-nums; }
+.fail { fill: var(--warn); font: 500 11px var(--font-mono); }
+.bar { cursor: default; }
+.bar:hover, .bar:focus { opacity: .8; outline: none; }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 16px rgb(0 0 0 / .12); white-space: nowrap; }
+.tip strong { font: 600 14px var(--font-mono); display: block; color: var(--ink); }
+.tip span { color: var(--ink-2); }
+.note { font-size: 13px; color: var(--ink-3); }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th { font-weight: 500; color: var(--ink-3); font-size: 12px; }
+td.n { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+th.n { text-align: right; }
+td.bad { color: var(--warn); font-family: var(--font-mono); text-align: right; }
+ul { margin: 0; padding-left: 20px; color: var(--ink-2); max-width: 68ch; display: grid; gap: 6px; }
+code { font: 13px var(--font-mono); background: var(--chip); padding: 1px 4px; border-radius: 3px; }
+@media (max-width: 520px) { h1 { font-size: 24px; } section.card { padding: 14px; } }
+</style>
+
+<main>
+  <header>
+    <div class="eyebrow">Qwen3.8-27B · Arc Pro B70 · 2026-09-29</div>
+    <h1>Decode speed across every engine and card layout</h1>
+    <p class="verdict" id="verdict"></p>
+  </header>
+
+  <section class="card" aria-labelledby="c1h">
+    <h2 id="c1h">One request at a time</h2>
+    <p>Decode tokens per second for a single request, measured with <code>bench.py</code> at temperature 0 (3 runs each, 1,024-token cap).</p>
+    <div class="legend"><span><i class="sw" style="background:var(--series-1)"></i>Code prompt</span><span><i class="sw" style="background:var(--series-2)"></i>Prose prompt</span></div>
+    <div class="chart" id="chart1"></div>
+  </section>
+
+  <section class="card" aria-labelledby="c2h">
+    <h2 id="c2h">Four requests at once</h2>
+    <p>Combined decode tokens per second across 4 concurrent requests (per-request average × 4). Four is the limit of vLLM's <code>max-num-seqs</code> here.</p>
+    <div class="legend"><span><i class="sw" style="background:var(--series-1)"></i>Code prompt</span><span><i class="sw" style="background:var(--series-2)"></i>Prose prompt</span></div>
+    <div class="chart" id="chart2"></div>
+  </section>
+
+  <section class="card" aria-labelledby="th">
+    <h2 id="th">Every measurement</h2>
+    <div class="tablewrap"><table id="table"></table></div>
+    <p class="note">llama-bench and llama-batched-bench numbers use their own harness, so compare them only within their column. The vLLM TP=2 total-throughput figures from 2026-09-28 (627 vs ~370 tok/s at 16+ requests, <code>max-num-seqs=64</code>) are in <code>qwen-vllm/docker-compose.tp2.yml</code>.</p>
+  </section>
+
+  <section class="card" aria-labelledby="mh">
+    <h2 id="mh">How these were measured</h2>
+    <ul id="method"></ul>
+  </section>
+</main>
+
+<script>
+// Single-request decode, bench.py, temperature 0. null = not measured.
+const SINGLE = [
+  { name: "llama.cpp Vulkan", sub: "1 card", code: 14.9, prose: 15.0 },
+  { name: "llama.cpp Vulkan", sub: "1 card · MTP", code: 24.5, prose: 17.9 },
+  { name: "llama.cpp SYCL", sub: "1 card", code: 20.5, prose: 20.5 },
+  { name: "llama.cpp SYCL", sub: "1 card · MTP", code: 36.1, prose: 26.8 },
+  { name: "llama.cpp SYCL tensor", sub: "2 cards", code: 28.6, prose: 28.5 },
+  { name: "llama.cpp SYCL tensor", sub: "2 cards · MTP", code: 56.6, prose: 42.0 },
+  { name: "vLLM", sub: "1 card · MTP (production)", code: 71.6, prose: 53.3 },
+  { name: "vLLM TP=2", sub: "2 cards · MTP", code: 69.9, prose: 52.6 },
+];
+// Combined decode at 4 concurrent requests. fail = what happened instead.
+const CONC4 = [
+  { name: "llama.cpp SYCL tensor", sub: "2 cards", fail: "hung: GPU copy-engine fault" },
+  { name: "vLLM", sub: "1 card · MTP (production)", code: 232.4, prose: 176.4 },
+  { name: "vLLM TP=2", sub: "2 cards · MTP", code: 234.8, prose: 175.6 },
+];
+const VERDICT = "Two-card llama.cpp with tensor split and MTP reaches 56.6 / 42.0 tok/s on code / prose, 79% of vLLM on one card, and it hangs under 4 concurrent requests. vLLM TP=2 matches one-card vLLM within 3% at 1 and 4 requests, so the second card is better spent on a second vLLM instance.";
+const METHOD = [
+  "Model: Qwen3.8-27B. vLLM runs the INT4 (compressed-tensors) build; llama.cpp runs unsloth's UD-Q4_K_M GGUF (15.3 GiB).",
+  "MTP means speculative decoding with the model's own multi-token-prediction head, 3 draft tokens, in both engines.",
+  "llama.cpp build b11243 (fc07d781e) for both backends; vLLM v0.30.0 XPU image.",
+  "tensor = llama.cpp --split-mode tensor across both B70s in one process, without oneCCL. vLLM TP=2 uses oneCCL with its SYCL all-reduce kernels disabled.",
+  "At 4 concurrent requests, llama.cpp tensor mode faulted the first card's copy engine (xe: Engine memory CAT error, engine reset) and the server stopped making progress.",
+  "vLLM without MTP measured about 31 tok/s single-request earlier (qwen-vllm/README.md); it is not charted because it wasn't re-run today."
+];
+const TABLE = [
+  ["Configuration", "Cards", "MTP", "Code 1×", "Prose 1×", "Code 4× total", "Prose 4× total", "llama-bench tg128", "llama-bench pp512"],
+  ["llama.cpp Vulkan", 1, "off", 14.9, 15.0, null, null, 14.5, 673],
+  ["llama.cpp Vulkan", 1, "on", 24.5, 17.9, null, null, null, null],
+  ["llama.cpp SYCL", 1, "off", 20.5, 20.5, null, null, 20.8, 748],
+  ["llama.cpp SYCL", 1, "on", 36.1, 26.8, null, null, null, null],
+  ["llama.cpp SYCL layer", 2, "off", null, null, null, null, 21.4, 740],
+  ["llama.cpp SYCL row", 2, "off", "crash", "crash", null, null, "crash", "crash"],
+  ["llama.cpp SYCL tensor", 2, "off", 28.6, 28.5, "hung", "—", 29.3, 989],
+  ["llama.cpp SYCL tensor", 2, "on", 56.6, 42.0, null, null, null, null],
+  ["vLLM", 1, "on", 71.6, 53.3, 232.4, 176.4, null, null],
+  ["vLLM TP=2", 2, "on", 69.9, 52.6, 234.8, 175.6, null, null],
+];
+
+const NS = "http://www.w3.org/2000/svg";
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function niceMax(v) { const step = v > 150 ? 50 : 10; return Math.ceil(v / step) * step; }
+
+// Horizontal grouped bars: one row per configuration, code and prose bars per row.
+function drawBars(host, rows) {
+  const W = 820, labelW = 210, right = 44, bar = 12, gap = 2, rowPad = 14, top = 8, axisH = 22;
+  const rowH = bar * 2 + gap + rowPad * 2;
+  const H = top + rows.length * rowH + axisH;
+  const max = niceMax(Math.max(...rows.flatMap(r => [r.code || 0, r.prose || 0])));
+  const step = max > 150 ? 50 : 10;
+  const x = v => labelW + (v / max) * (W - labelW - right);
+  const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, role: "img" }, host);
+  const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; host.appendChild(tip);
+
+  for (let t = 0; t <= max; t += step) {
+    el("line", { x1: x(t), x2: x(t), y1: top, y2: H - axisH, stroke: "var(--grid)", "stroke-width": 1 }, svg);
+    const tx = el("text", { x: x(t), y: H - 6, "text-anchor": "middle", class: "tick" }, svg); tx.textContent = t;
+  }
+  rows.forEach((r, i) => {
+    const y0 = top + i * rowH + rowPad;
+    const l1 = el("text", { x: 0, y: y0 + 10, class: "rowlabel" }, svg); l1.textContent = r.name;
+    const l2 = el("text", { x: 0, y: y0 + 25, class: "rowsub" }, svg); l2.textContent = r.sub;
+    if (r.fail) {
+      const f = el("text", { x: labelW + 4, y: y0 + 18, class: "fail" }, svg); f.textContent = r.fail;
+      return;
+    }
+    [["code", "Code prompt", "var(--series-1)"], ["prose", "Prose prompt", "var(--series-2)"]].forEach(([k, label, color], j) => {
+      const v = r[k], y = y0 + j * (bar + gap);
+      if (v == null) {
+        const n = el("text", { x: labelW + 4, y: y + 10, class: "val" }, svg); n.textContent = "not measured"; return;
+      }
+      const w = Math.max(x(v) - labelW, 2), r4 = Math.min(4, w / 2);
+      // Square at the baseline, 4px rounded data end.
+      const d = `M${labelW},${y}h${w - r4}a${r4},${r4} 0 0 1 ${r4},${r4}v${bar - 2 * r4}a${r4},${r4} 0 0 1 -${r4},${r4}h-${w - r4}z`;
+      const p = el("path", { d, fill: color, class: "bar", tabindex: 0, "aria-label": `${r.name}, ${r.sub}, ${label}: ${v} tokens per second` }, svg);
+      const t = el("text", { x: labelW + w + 6, y: y + 10, class: "val" }, svg); t.textContent = v.toFixed(1);
+      const show = ev => {
+        tip.replaceChildren();
+        const s = document.createElement("strong"); s.textContent = `${v.toFixed(1)} tok/s`;
+        const a = document.createElement("span"); a.textContent = `${label} · ${r.name}, ${r.sub}`;
+        tip.append(s, a); tip.hidden = false;
+        const hb = host.getBoundingClientRect(), pb = p.getBoundingClientRect();
+        let left = pb.right - hb.left + 8; const tw = tip.offsetWidth;
+        if (left + tw > hb.width) left = Math.max(0, pb.right - hb.left - tw - 8);
+        tip.style.left = left + "px"; tip.style.top = (pb.top - hb.top - 8) + "px";
+      };
+      p.addEventListener("pointerenter", show); p.addEventListener("focus", show);
+      p.addEventListener("pointerleave", () => tip.hidden = true); p.addEventListener("blur", () => tip.hidden = true);
+    });
+  });
+}
+
+function fillTable() {
+  const t = document.getElementById("table");
+  TABLE.forEach((row, i) => {
+    const tr = document.createElement("tr");
+    row.forEach((c, j) => {
+      const cell = document.createElement(i === 0 ? "th" : "td");
+      if (j >= 3) cell.className = i === 0 ? "n" : (typeof c === "string" && c !== "—" ? "bad" : "n");
+      cell.textContent = c == null ? "" : (typeof c === "number" && j >= 3 ? (c >= 100 ? c.toFixed(0) : c.toFixed(1)) : c);
+      tr.appendChild(cell);
+    });
+    t.appendChild(tr);
+  });
+}
+
+document.getElementById("verdict").textContent = VERDICT;
+METHOD.forEach(m => { const li = document.createElement("li"); li.textContent = m; document.getElementById("method").appendChild(li); });
+drawBars(document.getElementById("chart1"), SINGLE);
+drawBars(document.getElementById("chart2"), CONC4);
+fillTable();
+</script>

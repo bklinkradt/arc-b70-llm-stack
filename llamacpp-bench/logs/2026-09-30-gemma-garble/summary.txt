@@ -1,0 +1,78 @@
+Gemma garble test 2026-09-30 12:04:16, llama.cpp fc07d781e
+== gemma-4-12B-it-Q4_0  vulkan-mesa26
+  short 1:  2328 chars  ok
+  short 2:  1958 chars  ok
+  short 3:  1313 chars  ok
+  short 4:   898 chars  ok
+  short 5:  2207 chars  ok
+  short 6:  1633 chars  ok
+  short corrupted: 0/6
+  repro nocache: corrupted rounds: 0/5
+  repro cache: corrupted rounds: 0/5
+  xe faults: none
+== gemma-4-12B-it-Q4_0  sycl-opt1
+Gemma garble test 2026-09-30 12:35:21, llama.cpp fc07d781e
+== gemma-4-12B-it-Q4_0  sycl-opt1
+  short 1:  2252 chars  ok
+  short 2:  1932 chars  ok
+  short 3:  1256 chars  ok
+  short 4:   898 chars  ok
+  short 5:  2196 chars  ok
+  short 6:  1491 chars  ok
+  short corrupted: 0/6
+  repro nocache: corrupted rounds: 0/5
+  repro cache: corrupted rounds: 0/5
+  xe faults: none
+== gemma-4-12B-it-Q4_0  sycl-opt0
+  short 1:  2279 chars  ok
+  short 2:  1958 chars  ok
+  short 3:  1313 chars  ok
+  short 4:   898 chars  ok
+  short 5:  2207 chars  ok
+  short 6:  1630 chars  ok
+  short corrupted: 0/6
+  repro nocache: corrupted rounds: 0/5
+  repro cache: corrupted rounds: 0/5
+  xe faults: none
+== similarity to vulkan-mesa26 (short prompts, difflib ratio)
+  gemma-4-12B-it-Q4_0          sycl-opt1  0.05 0.90 0.57 1.00 0.99 0.74
+  gemma-4-12B-it-Q4_0          sycl-opt0  0.05 1.00 1.00 1.00 1.00 0.87
+Gemma garble test 2026-09-30 12:50:38, llama.cpp fc07d781e
+== gemma-4-12b-it-Q4_K_M  vulkan-mesa26
+  short 1:  2332 chars  ok
+  short 2:  1963 chars  ok
+  short 3:  1372 chars  ok
+  short 4:   802 chars  ok
+  short 5:  2191 chars  ok
+  short 6:  1476 chars  ok
+  short corrupted: 0/6
+  repro nocache: corrupted rounds: 0/5
+  repro cache: corrupted rounds: 0/5
+  xe faults: none
+== gemma-4-12b-it-Q4_K_M  sycl-opt1
+  short 1:  2262 chars  ok
+  short 2:  1989 chars  ok
+  short 3:  1361 chars  ok
+  short 4:   789 chars  ok
+  short 5:  2285 chars  ok
+  short 6:  1412 chars  ok
+  short corrupted: 0/6
+  repro nocache: corrupted rounds: 0/5
+  repro cache: corrupted rounds: 0/5
+  xe faults: none
+== gemma-4-12b-it-Q4_K_M  sycl-opt0
+  short 1:  2308 chars  ok
+  short 2:  1989 chars  ok
+  short 3:  1369 chars  ok
+  short 4:   779 chars  ok
+  short 5:  2261 chars  ok
+  short 6:  1318 chars  ok
+  short corrupted: 0/6
+  repro nocache: corrupted rounds: 0/5
+  repro cache: corrupted rounds: 0/5
+  xe faults: none
+== similarity to vulkan-mesa26 (short prompts, difflib ratio)
+  gemma-4-12B-it-Q4_0          sycl-opt1  0.05 0.90 0.57 1.00 0.99 0.74
+  gemma-4-12B-it-Q4_0          sycl-opt0  0.05 1.00 1.00 1.00 1.00 0.87
+  gemma-4-12b-it-Q4_K_M        sycl-opt1  0.57 0.55 0.54 0.99 0.51 0.63
+  gemma-4-12b-it-Q4_K_M        sycl-opt0  0.83 0.55 0.53 0.99 0.52 0.68

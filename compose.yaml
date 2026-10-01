@@ -1,0 +1,8 @@
+# The whole stack as one compose project. Each part keeps its own compose file,
+# which still works on its own from its directory; see README.md and the Makefile.
+name: local-serve
+
+include:
+  - qwen-vllm/docker-compose.yml
+  - qwen-image/docker-compose.yml
+  - gateway/docker-compose.yml

@@ -1,0 +1,31 @@
+# Docker socket proxy for llama-swap. It allows only what `docker start`, `docker stop`
+# and `docker inspect` need, and only for the model containers in
+# ../llama-swap/layouts/layouts.conf (keep the two lists in sync):
+#   GET/HEAD /_ping, /version
+#   GET      /containers/{qwen-vllm,qwen-vllm-2,qwen-vllm-tp2,qwen-image}/json
+#   POST     /containers/{qwen-vllm,qwen-vllm-2,qwen-vllm-tp2,qwen-image}/{start,stop}
+# Everything else (create, exec, other containers, images, ...) gets a 403.
+{
+	admin off
+	auto_https off
+}
+
+:2375 {
+	@read {
+		method GET HEAD
+		path_regexp ^(/v[0-9.]+)?/(_ping|version|containers/(qwen-vllm|qwen-vllm-2|qwen-vllm-tp2|qwen-image)/json)$
+	}
+	@control {
+		method POST
+		path_regexp ^(/v[0-9.]+)?/containers/(qwen-vllm|qwen-vllm-2|qwen-vllm-tp2|qwen-image)/(start|stop)$
+	}
+	handle @read {
+		reverse_proxy unix//var/run/docker.sock
+	}
+	handle @control {
+		reverse_proxy unix//var/run/docker.sock
+	}
+	handle {
+		respond 403
+	}
+}

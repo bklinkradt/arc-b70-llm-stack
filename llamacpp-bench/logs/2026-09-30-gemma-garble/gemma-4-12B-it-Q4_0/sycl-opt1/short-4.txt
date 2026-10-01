@@ -1,0 +1,26 @@
+To find the arrival time, we need to calculate the travel duration and add it to the departure time.
+
+### Step 1: Calculate the travel time
+The formula for time is:
+$$\text{Time} = \frac{\text{Distance}}{\text{Speed}}$$
+
+$$\text{Time} = \frac{312 \text{ km}}{96 \text{ km/h}}$$
+$$\text{Time} = 3.25 \text{ hours}$$
+
+### Step 2: Convert the decimal hours into minutes
+Since there are 60 minutes in an hour, we multiply the decimal part by 60:
+*   The whole number is **3 hours**.
+*   The decimal part is $0.25 \text{ hours}$.
+*   $0.25 \times 60 \text{ minutes} = 15 \text{ minutes}$.
+
+So, the total travel time is **3 hours and 15 minutes**.
+
+### Step 3: Add the travel time to the departure time
+*   **Departure Time:** 14:05
+*   **Travel Duration:** + 3 hours 15 minutes
+
+Calculation:
+*   $14:05 + 3 \text{ hours} = 17:05$
+*   $17:05 + 15 \text{ minutes} = 17:20$
+
+**The train arrives at 17:20.**

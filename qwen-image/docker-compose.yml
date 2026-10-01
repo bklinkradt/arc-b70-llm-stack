@@ -1,0 +1,49 @@
+services:
+  qwen-image:
+    # Fixed name: llama-swap (../gateway) starts and stops this container by name.
+    container_name: qwen-image
+    build:
+      context: .
+      args:
+        UID: ${UID:-1000}
+        GID: ${GID:-1000}
+    image: qwen-image-xpu:latest
+    # llama-swap owns the lifecycle, so `docker compose up` must not start it;
+    # `make up` in the repo root only creates it.
+    profiles: [managed]
+    # The second Arc Pro B70 (PCI 08:00.0 here; IMAGE_CARD_PCI) only, by PCI path because the renderD/card
+    # numbers shift when cards are added. It shares that card with ../qwen-vllm's vllm-2.
+    # Long syntax: the colons in the PCI path confuse the short form.
+    devices:
+      - source: /dev/dri/by-path/pci-${IMAGE_CARD_PCI:-0000:08:00.0}-render
+        target: /dev/dri/renderD128
+        permissions: rwm
+      - source: /dev/dri/by-path/pci-${IMAGE_CARD_PCI:-0000:08:00.0}-card
+        target: /dev/dri/card0
+        permissions: rwm
+    group_add:
+      - "${RENDER_GID:-105}" # render; `getent group video render` on your host
+      - "${VIDEO_GID:-39}"   # video
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+      QWEN_OFFLOAD: ${QWEN_OFFLOAD:-auto}
+      QWEN_MODEL: ${QWEN_MODEL:-Qwen/Qwen-Image-2.1}
+      QWEN_VAE_TILE: ${QWEN_VAE_TILE:-1024}
+      ZE_AFFINITY_MASK: "0"
+    volumes:
+      - ${HOME}/.cache/huggingface:/home/app/.cache/huggingface
+      - ./outputs:/app/outputs
+    # Localhost only: remote access goes through the gateway (../gateway), which adds API keys.
+    ports:
+      - "127.0.0.1:7860:7860"
+    networks:
+      - default
+      - llm-net
+    shm_size: 16g
+    # llama-swap owns the lifecycle while this shares a card with vllm-2; auto-restart
+    # would bring it back up next to vLLM and run the card out of memory.
+    restart: "no"
+
+networks:
+  llm-net:
+    external: true

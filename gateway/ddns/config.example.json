@@ -1,0 +1,12 @@
+{
+  "settings": [
+    {
+      "provider": "cloudflare",
+      "zone_identifier": "your-zone-id",
+      "domain": "llm.example.com",
+      "ttl": 300,
+      "token": "cloudflare-api-token-with-dns-edit",
+      "ip_version": "ipv4"
+    }
+  ]
+}

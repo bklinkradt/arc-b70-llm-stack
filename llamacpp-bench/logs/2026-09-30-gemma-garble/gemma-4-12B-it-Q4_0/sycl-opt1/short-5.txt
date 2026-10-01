@@ -1,0 +1,52 @@
+To solve this problem, the most efficient and standard way is to use a **Window Function** (specifically `ROW_NUMBER()`).
+
+Assuming we have two tables: `Customers` and `Orders`.
+
+### The SQL Query
+
+```sql
+WITH RankedOrders AS (
+    SELECT 
+        c.customer_id,
+        c.customer_name,
+        o.order_id,
+        o.order_date,
+        ROW_NUMBER() OVER (
+            PARTITION BY c.customer_id 
+            ORDER BY o.order_date DESC
+        ) as order_rank
+    FROM Customers c
+    JOIN Orders o ON c.customer_id = o.customer_id
+)
+SELECT 
+    customer_id,
+    customer_name,
+    order_id,
+    order_date
+FROM RankedOrders
+WHERE order_rank <= 3
+ORDER BY customer_id, order_rank;
+```
+
+---
+
+### Explanation: How it works
+
+The query is broken down into two main parts: the **Common Table Expression (CTE)** and the **Final Selection**.
+
+#### 1. The CTE (`RankedOrders`)
+This is where the heavy lifting happens. We create a temporary result set that attaches a "rank" to every single order in the database.
+
+*   **`JOIN`**: We combine the `Customers` and `Orders` tables so we can see the names associated with the IDs.
+*   **`ROW_NUMBER()`**: This is a window function. It assigns a sequential integer (1, 2, 3...) to rows.
+*   **`PARTITION BY c.customer_id`**: This is the most important part. It tells the database to "restart" the numbering for every unique customer. Instead of numbering all orders in the table from 1 to 1,000, it numbers them 1, 2, 3 for Customer A, then 1, 2, 3 for Customer B, and so on.
+*   **`ORDER BY o.order_date DESC`**: This tells the database how to decide who gets rank #1. By sorting by date in **Descending** order, the most recent date gets rank 1, the second most recent gets rank 2, etc.
+
+#### 2. The Final Selection
+Once the CTE has finished numbering everything, we simply filter the results.
+
+*   **`WHERE order_rank <= 3`**: This discards everything except the top three most recent orders for every customer.
+*   **`ORDER BY customer_id, order_rank`**: This organizes the final output so that all orders for one customer appear together in chronological order.
+
+### Why use `ROW_NUMBER()` instead of `LIMIT`?
+A common mistake is trying to use `LIMIT 3`.

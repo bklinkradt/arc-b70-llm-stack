@@ -1,0 +1,57 @@
+A **Hash Map** (or Hash Table) stores data in key-value pairs. It uses a **hash function** to turn a key (like a string) into an integer index.
+
+### The Problem: Collisions
+A collision occurs when two different keys produce the same index after being hashed. Since two pieces of data cannot occupy the same slot in an array, the hash map must have a strategy to handle this.
+
+There are two primary ways to handle collisions:
+
+#### 1. Separate Chaining (Most Common)
+Instead of storing the value directly in the array slot, each slot contains a **Linked List** (or another data structure). If multiple keys hash to the same index, they are all stored in that list.
+*   **How it works:** To find a value, the map goes to the index and then traverses the list, comparing the keys until it finds the right one.
+
+#### 2. Open Addressing (Linear Probing)
+If a collision occurs, the map looks for the next available empty slot in the array.
+*   **How it works:** If index `5` is full, it tries `6`, then `7`, and so on, until it finds an empty spot.
+
+---
+
+### Python Example: Separate Chaining
+Python’s built-in `dict` uses a sophisticated version of hashing, but here is a simplified version of **Separate Chaining** to show the logic:
+
+```python
+class SimpleHashMap:
+    def __init__(self, size=10):
+        self.size = size
+        # Create a list of empty lists (the "buckets")
+        self.table = [[] for _ in range(self.size)]
+
+    def _get_hash(self, key):
+        # A simple hash function: return index based on key length
+        # In real life, this would be a complex mathematical hash
+        return hash(key) % self.size
+
+    def put(self, key, value):
+        index = self._get_hash(key)
+        bucket = self.table[index]
+        
+        # Check if key already exists in the bucket to update it
+        for i, kv in enumerate(bucket):
+            k, v = kv
+            if k == key:
+                bucket[i] = (key, value)
+                return
+
+        # If key doesn't exist, append the new pair (Collision Handling)
+        bucket.append((key, value))
+
+    def get(self, key):
+        index = _get_hash(key)
+        bucket = self.table[index]
+        
+        for k, v in bucket:
+            if k == key:
+                return v
+        return "Key not found"
+
+# --- Demonstration ---
+my_map = SimpleHashMap(size=

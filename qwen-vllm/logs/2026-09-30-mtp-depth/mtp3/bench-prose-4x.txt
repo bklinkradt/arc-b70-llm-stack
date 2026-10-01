@@ -1,0 +1,13 @@
+TTFT  0.27s  tokens  840  decode  44.1 tok/s
+TTFT  0.14s  tokens  852  decode  44.1 tok/s
+TTFT  0.27s  tokens  907  decode  45.4 tok/s
+TTFT  0.27s  tokens  886  decode  42.9 tok/s
+TTFT  0.26s  tokens  889  decode  42.6 tok/s
+TTFT  0.22s  tokens  855  decode  43.7 tok/s
+TTFT  0.28s  tokens  916  decode  43.3 tok/s
+TTFT  0.23s  tokens  917  decode  43.6 tok/s
+TTFT  0.24s  tokens  852  decode  43.9 tok/s
+TTFT  0.23s  tokens  828  decode  43.0 tok/s
+TTFT  0.23s  tokens  855  decode  44.1 tok/s
+TTFT  0.23s  tokens  895  decode  43.3 tok/s
+avg decode: 43.7 tok/s

@@ -1,0 +1,13 @@
+== TP=2 (Gen5)  11:33:48
+-- bench 3 code 1 (temp 0)
+avg decode: 69.5 tok/s
+-- bench 3 prose 1 (temp 0)
+avg decode: 52.0 tok/s
+-- bench 2 code 4 (temp 0)
+avg decode: 59.0 tok/s
+-- bench 2 prose 4 (temp 0)
+avg decode: 44.5 tok/s
+-- prefill
+prompt   4223 tok  time   2.91s  prefill    1449 tok/s
+prompt  16803 tok  time  12.50s  prefill    1344 tok/s
+prompt  62892 tok  time  55.07s  prefill    1142 tok/s

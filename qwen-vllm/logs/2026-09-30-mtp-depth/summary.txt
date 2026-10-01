@@ -1,0 +1,65 @@
+MTP depth sweep 2026-09-30 14:55:44, vllm-openai-xpu:v0.30.0
+== num_speculative_tokens=3
+  up after 83s
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+ValueError: invalid literal for int() with base 10: 'code'
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+ValueError: invalid literal for int() with base 10: 'prose'
+  acceptance by position: 87% 73% 60%  mean tokens per step: 3.20
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+ValueError: invalid literal for int() with base 10: 'code'
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+ValueError: invalid literal for int() with base 10: 'code'
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+ValueError: invalid literal for int() with base 10: 'prose'
+  repro nocache: corrupted rounds: 0/5
+  repro cache: corrupted rounds: 0/5
+  xe faults: none
+== num_speculative_tokens=2
+  up after 134s
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+ValueError: invalid literal for int() with base 10: 'code'
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+ValueError: invalid literal for int() with base 10: 'prose'
+  acceptance by position: 88% 73%  mean tokens per step: 2.62
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+ValueError: invalid literal for int() with base 10: 'code'
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+ValueError: invalid literal for int() with base 10: 'code'
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+ValueError: invalid literal for int() with base 10: 'prose'
+  repro nocache: corrupted rounds: 0/5
+  repro cache: corrupted rounds: 0/5
+  xe faults: none
+== num_speculative_tokens=4
+  up after 133s
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+ValueError: invalid literal for int() with base 10: 'code'
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+ValueError: invalid literal for int() with base 10: 'prose'
+  acceptance by position: 85% 71% 57% 47%  mean tokens per step: 3.60
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+ValueError: invalid literal for int() with base 10: 'code'
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+ValueError: invalid literal for int() with base 10: 'code'
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+ValueError: invalid literal for int() with base 10: 'prose'
+  repro nocache: corrupted rounds: 0/5
+  repro cache: corrupted rounds: 0/5
+  xe faults: none
+card returned to llama-swap 15:29:59

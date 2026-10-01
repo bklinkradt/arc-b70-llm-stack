@@ -1,0 +1,137 @@
+name: gateway
+
+# Internet-facing entry point for the models in ../qwen-vllm and ../qwen-image:
+#
+#   Caddy (TLS, WAN sees /v1/* only) -> LiteLLM (API keys, limits) -+
+#     chat:   -> vllm-lb -> whichever vLLM containers the GPU layout runs:
+#                           split: qwen-vllm (B70 #1) + qwen-vllm-2 (B70 #2)
+#                           tp2:   qwen-vllm-tp2 (both cards)
+#     images: -> llama-swap -> qwen-image (B70 #2, evicts the chat container there)
+#
+# llama-swap places every model container (llama-swap/gpu-layout.sh,
+# llama-swap/layouts/layouts.conf). It reaches Docker only through docker-api, which
+# allows start/stop/inspect of those containers and nothing else.
+
+services:
+  caddy:
+    image: caddy:2.11.4@sha256:0c994536bddb66445885237f1a5dcc1916bccea922661c76b4e9fc24061f9b52
+    restart: unless-stopped
+    # IPv4 only: Docker's IPv6 userland proxy would hide client addresses, and the
+    # admin-API allowlist in the Caddyfile relies on them.
+    ports:
+      - "0.0.0.0:80:80"
+      - "0.0.0.0:443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data  # certificates and ACME account
+      - caddy-config:/config
+    depends_on:
+      - litellm
+
+  litellm:
+    image: ghcr.io/berriai/litellm:v1.102.1@sha256:87f34979b9f8cb274fac90ca8a4fdda07d8480de22755562a26adeb95ce20d02
+    restart: unless-stopped
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    # Host-local admin access (UI at http://localhost:4000/ui) without going through Caddy.
+    ports:
+      - "127.0.0.1:4000:4000"
+    networks:
+      - default
+      - llm-net
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:?set LITELLM_MASTER_KEY in .env}
+      # Encrypts secrets stored in the database. Never change it once keys exist.
+      LITELLM_SALT_KEY: ${LITELLM_SALT_KEY:?set LITELLM_SALT_KEY in .env}
+      DATABASE_URL: postgresql://litellm:${POSTGRES_PASSWORD}@postgres:5432/litellm
+      UI_USERNAME: admin
+      UI_PASSWORD: ${LITELLM_UI_PASSWORD:?set LITELLM_UI_PASSWORD in .env}
+      STORE_MODEL_IN_DB: "False"
+    volumes:
+      - ./litellm/config.yaml:/app/config.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: litellm
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "litellm", "-d", "litellm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  llama-swap:
+    build: ./llama-swap
+    image: gateway-llama-swap:260
+    container_name: llama-swap
+    restart: unless-stopped
+    networks:
+      - llm-net     # LiteLLM in, qwen-image out
+      - docker-api
+    environment:
+      DOCKER_HOST: tcp://docker-api:2375
+    volumes:
+      - ./llama-swap/config.yaml:/config/config.yaml:ro
+      # layouts.conf, plus the layout `make mode` picked.
+      - ./llama-swap/layouts:/config/layouts:ro
+    depends_on:
+      - docker-api
+
+  # Spreads chat over the vLLM instances that are up; see vllm-lb/Caddyfile.
+  vllm-lb:
+    image: caddy:2.11.4@sha256:0c994536bddb66445885237f1a5dcc1916bccea922661c76b4e9fc24061f9b52
+    container_name: vllm-lb
+    restart: unless-stopped
+    networks:
+      - llm-net     # LiteLLM and Open WebUI in, the vLLM containers out
+    volumes:
+      - ./vllm-lb/Caddyfile:/etc/caddy/Caddyfile:ro
+
+  # Allowlisting proxy for the Docker socket; see docker-api/Caddyfile.
+  docker-api:
+    image: caddy:2.11.4@sha256:0c994536bddb66445885237f1a5dcc1916bccea922661c76b4e9fc24061f9b52
+    restart: unless-stopped
+    networks:
+      - docker-api
+    volumes:
+      - ./docker-api/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  # Keeps DOMAIN pointed at the home IP. Enable once ddns/config.json exists:
+  #   make ddns   (from the repo root)
+  ddns:
+    image: qmcgaw/ddns-updater:v2.10@sha256:3e2aa558946b5a293def4d73008fa4651c072b2c12932cecd02126fb23979831
+    profiles: [ddns]
+    restart: unless-stopped
+    environment:
+      PERIOD: 5m
+    volumes:
+      - ./ddns:/updater/data
+
+networks:
+  # Shared with ../qwen-vllm and ../qwen-image; the root Makefile creates it.
+  llm-net:
+    external: true
+  # No outside access: only llama-swap can talk to the Docker socket proxy.
+  docker-api:
+    internal: true
+
+# Fixed names: these predate the monorepo and hold the TLS certificates and LiteLLM's
+# keys, so they must keep their names whichever compose project runs them.
+volumes:
+  caddy-data:
+    name: gateway_caddy-data
+  caddy-config:
+    name: gateway_caddy-config
+  postgres-data:
+    name: gateway_postgres-data

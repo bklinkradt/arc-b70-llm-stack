@@ -1,0 +1,2 @@
+x16: 14345 tokens in 34.9s = 410 tok/s aggregate; avg decode: 27.0 tok/s
+x32: 28378 tokens in 55.7s = 509 tok/s aggregate; avg decode: 17.2 tok/s

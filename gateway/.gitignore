@@ -1,0 +1,6 @@
+.env
+# ddns-updater config (holds DNS provider credentials) and its state.
+ddns/*
+!ddns/config.example.json
+# Saved by `make mode`; machine state, not config.
+llama-swap/layouts/mode

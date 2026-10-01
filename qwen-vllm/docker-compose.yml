@@ -15,7 +15,7 @@ services:
     # both cards in oneCCL's SYCL all-reduce kernels, which TP=2 needs; one card runs
     # the same on both (README.md). Upstream replaced intel/llm-scaler-vllm:0.26.0-b2,
     # whose kernels lack the GDN conv-state fix (vllm-xpu-kernels #544/#545) and
-    # corrupt long MTP generations when prefix caching is on (commit 8a9aa20).
+    # corrupt long MTP generations when prefix caching is on.
     build: ./runtime-26.35
     image: qwen-vllm-runtime:26.35
     container_name: qwen-vllm
@@ -212,7 +212,7 @@ networks:
   llm-net:
     external: true
 
-# Fixed names so the data survives running from the root compose project.
+# Fixed names, independent of the compose project name.
 volumes:
   vllm-cache-runtime:
     name: qwen-vllm_vllm-cache-runtime

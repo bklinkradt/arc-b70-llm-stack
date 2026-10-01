@@ -1,4 +1,4 @@
-# local-serve
+# Qwen on two Intel Arc Pro B70s
 
 Self-hosted Qwen models on two Intel Arc Pro B70s: Qwen3.8-27B for chat and
 Qwen-Image-2.1 for images, served to the internet through an API gateway with
@@ -48,7 +48,10 @@ directory, so `gateway/.env` stays in `gateway/`.
 
 Needs Docker with Compose 2.20 or newer (for `include:`) and `make`.
 
-1. Model weights at `~/models/Qwen3.8-27B-INT4`, or set `MODELS_DIR` (see `qwen-vllm/README.md`).
+1. Model weights (~20 GB), [RedHatAI/Qwen3.8-27B-INT4](https://huggingface.co/RedHatAI/Qwen3.8-27B-INT4):
+   `hf download RedHatAI/Qwen3.8-27B-INT4 --local-dir ~/models/Qwen3.8-27B-INT4`.
+   Elsewhere than `~/models`? Set `MODELS_DIR`. Qwen-Image downloads its own weights
+   on first use.
 2. Gateway secrets: `cp gateway/.env.example gateway/.env`, fill it in, `chmod 600`.
    DNS and router steps are in `gateway/README.md`.
 3. Optional: `cp qwen-image/.env.example qwen-image/.env` for `HF_TOKEN` / `QWEN_OFFLOAD`.
@@ -78,9 +81,17 @@ starts a separate compose project, and it clashes with the fixed container names
 Local endpoints: vLLM `localhost:8000` (`qwen-vllm` or `qwen-vllm-tp2`) / `:8001`, LiteLLM admin `localhost:4000/ui`,
 Open WebUI `:3000`, Grafana `:3001`, qwen-image Gradio `localhost:7860`.
 
-## Volumes
+## Data
 
-The named volumes predate this repo, so they keep their original names (`gateway_*`,
-`qwen-vllm_*`) through `name:` in each compose file. Don't rename them:
-`gateway_postgres-data` holds every API key and `gateway_caddy-data` holds the TLS
-certificates.
+State lives in named Docker volumes, so `make down` and rebuilds keep it:
+
+| Volume | Holds |
+|---|---|
+| `gateway_postgres-data` | LiteLLM's database: every API key, its limits and usage. Back this up |
+| `gateway_caddy-data` | TLS certificates and the ACME account |
+| `qwen-vllm_open-webui-data` | Open WebUI accounts, chats and uploads |
+| `qwen-vllm_grafana-data`, `qwen-vllm_prometheus-data` | Dashboards state and 30 days of metrics |
+| `qwen-vllm_vllm-cache-runtime*` | vLLM's compiled-kernel caches; safe to delete (the next start recompiles, ~10 min) |
+
+The names are fixed with `name:` in each compose file, so they don't depend on the
+compose project name. Never run `docker compose down -v`: it deletes them.

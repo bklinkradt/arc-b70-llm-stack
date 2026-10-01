@@ -19,8 +19,10 @@ Prometheus + Grafana monitoring stack.
 ## Requirements
 
 - An Intel Arc GPU with the `xe` driver, plus Docker with Compose
-- The model at `~/models/Qwen3.8-27B-INT4`. To use another directory, set
-  `MODELS_DIR` in the environment or in `qwen-vllm/.env`.
+- The model at `~/models/Qwen3.8-27B-INT4`
+  ([RedHatAI/Qwen3.8-27B-INT4](https://huggingface.co/RedHatAI/Qwen3.8-27B-INT4), an
+  AWQ INT4 quant with the MTP head). To use another directory, set `MODELS_DIR` in the
+  environment or in `qwen-vllm/.env`.
 - The host's `video` and `render` group IDs (`getent group video render`). The
   defaults are Fedora's 39 and 105; set `VIDEO_GID` / `RENDER_GID` if yours differ.
 
@@ -96,20 +98,17 @@ have the details.
 
 ### History: Intel llm-scaler image
 
-Until 2026-09-26 this ran `intel/llm-scaler-vllm:0.26.0-b2` with MTP off. Two
-experiments on that image were removed with it; both are in git history:
+Until 2026-09-26 this ran `intel/llm-scaler-vllm:0.26.0-b2` with MTP off. If you
+use that image, never enable MTP while prefix caching is on. One experiment on it is
+worth knowing about:
 
-- **Fallback override** (`docker-compose.llm-scaler.yml`, last in commit
-  `8a9aa20`): the old image with MTP off. Never enable MTP on that image while
-  prefix caching is on.
-- **Intel runtime 26.31** (`runtime-26.31/Dockerfile` and
-  `docker-compose.runtime.yml`, last in commit `8a9aa20`): the image with
-  compute-runtime 26.31, IGC 2.40.13 and Level Zero 1.32. With MTP it cut
-  corruption to 3 of 30 rounds but didn't fix it, because the bug was in the
-  kernels. Building it taught two things: the PPA's `libigc2`/`libigdfcl2` must be
-  force-removed before Intel's `intel-igc-*` packages install, and `libze-dev`
-  is required, since oneCCL loads the unversioned `libze_loader.so` and fails with
-  `oneCCL: ... ze_data was not initialized` without it.
+- **Intel runtime 26.31** on top of llm-scaler: compute-runtime 26.31, IGC 2.40.13
+  and Level Zero 1.32. With MTP it cut corruption to 3 of 30 rounds but didn't fix
+  it, because the bug was in the kernels. Building it taught two things: the PPA's
+  `libigc2`/`libigdfcl2` must be force-removed before Intel's `intel-igc-*`
+  packages install, and `libze-dev` is required, since oneCCL loads the
+  unversioned `libze_loader.so` and fails with `oneCCL: ... ze_data was not
+  initialized` without it.
 
 ## Benchmarking
 

@@ -126,8 +126,8 @@ networks:
   docker-api:
     internal: true
 
-# Fixed names: these predate the monorepo and hold the TLS certificates and LiteLLM's
-# keys, so they must keep their names whichever compose project runs them.
+# Fixed names, independent of the compose project name: these hold the TLS
+# certificates and LiteLLM's keys.
 volumes:
   caddy-data:
     name: gateway_caddy-data

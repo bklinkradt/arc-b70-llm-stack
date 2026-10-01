@@ -80,3 +80,6 @@ mtp:
 mtp-down:
 	$(MTP_COMPOSE) rm -sf vllm-mtp
 	docker start llama-swap
+
+# Maintainer-only targets (make publish); absent from the public repo.
+-include publish.mk

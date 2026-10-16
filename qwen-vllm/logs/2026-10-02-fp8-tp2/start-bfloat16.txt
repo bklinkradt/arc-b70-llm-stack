@@ -1,0 +1,9 @@
+llama-swap
+qwen-vllm
+qwen-vllm-2
+qwen-vllm-tp2
+qwen-image
+ Container qwen-vllm-fp8 Creating 
+ Container qwen-vllm-fp8 Created 
+ Container qwen-vllm-fp8 Starting 
+ Container qwen-vllm-fp8 Started 

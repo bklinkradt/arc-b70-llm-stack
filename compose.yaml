@@ -5,4 +5,6 @@ name: local-serve
 include:
   - qwen-vllm/docker-compose.yml
   - qwen-image/docker-compose.yml
+  - gemma/docker-compose.yml
+  - gpt-oss/docker-compose.yml
   - gateway/docker-compose.yml

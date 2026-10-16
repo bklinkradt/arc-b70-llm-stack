@@ -75,6 +75,10 @@ because this stack moves fast: re-check anything older than a few months.
   `VLLM_XPU_ENABLE_XPU_GRAPH=0`.
 - **fp8 KV cache and fp16 dtype:** no meaningful gain.
 - **Compute runtime 26.35 on one card:** same speed as 26.27. It only matters for TP=2.
+- **FP8 weights instead of INT4 (2026-10-02):** `Qwen3.8-27B-FP8` (block-wise e4m3) on
+  TP=2 decodes ~43% slower (62 / 46 vs 109 / 83 tok/s code / prose) and prefills 20–37%
+  slower, with bf16 or fp16 activations alike. The block-scaled FP8 GEMM is the cost,
+  not just the extra bytes. [Numbers](qwen-vllm/logs/2026-10-02-fp8-tp2/summary.txt).
 
 ### MTP draft depth
 3 drafts is best for Qwen3.8-27B: ~68–72 tok/s on code and ~50–53 on prose, vs ~31

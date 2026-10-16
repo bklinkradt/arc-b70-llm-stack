@@ -29,7 +29,7 @@ x-card1: &card1
     "--host", "0.0.0.0",
     "--port", "8080",
     "--n-gpu-layers", "999",
-    "--ctx-size", "32768",
+    "--ctx-size", "${CTX:-32768}",
     "--flash-attn", "on",
     "--parallel", "${PARALLEL:-1}",
     "--jinja",
@@ -40,11 +40,18 @@ x-card1: &card1
     # like production vLLM. Default off.
     LLAMA_ARG_SPEC_TYPE: ${SPEC:-none}
     LLAMA_ARG_SPEC_DRAFT_N_MAX: "3"
+    # For MoE models bigger than VRAM: CPU_MOE=N keeps the experts of the first N
+    # layers in system RAM. KV=q8_0 halves the KV cache (flash attention is on).
+    LLAMA_ARG_N_CPU_MOE: ${CPU_MOE:-0}
+    LLAMA_ARG_CACHE_TYPE_K: ${KV:-f16}
+    LLAMA_ARG_CACHE_TYPE_V: ${KV:-f16}
   restart: "no"
 
 services:
-  # Both images are the same llama.cpp build (0.5.0-dev b11243, commit fc07d781e).
-  # "full" rather than "server" images so llama-bench is available too.
+  # llama.cpp b11669 (commit 620d2225c) since 2026-10-16, except llama-vulkan, the Mesa
+  # 26.0.8 baseline, which stays on b11243 (fc07d781e). Runs before that date used
+  # b11243 throughout (full-intel sha256:95778c3c…). "full" rather than "server" images
+  # so llama-bench is available too.
   llama-vulkan:
     <<: *card1
     # Ubuntu 26.04, Mesa 26.0.8 (ANV), Vulkan loader 1.4.341.
@@ -57,8 +64,12 @@ services:
   # Same llama.cpp commit built on Fedora 44 for Mesa 26.2.x (vulkan-mesa26/Dockerfile).
   llama-vulkan-mesa26:
     <<: *card1
-    image: llamacpp-vulkan-mesa26:fc07d781e
-    build: vulkan-mesa26
+    # VULKAN_COMMIT= builds and runs another llama.cpp commit (vulkan-mesa26/Dockerfile).
+    image: llamacpp-vulkan-mesa26:${VULKAN_COMMIT:-620d2225c}
+    build:
+      context: vulkan-mesa26
+      args:
+        LLAMA_COMMIT: ${VULKAN_COMMIT:-620d2225c}
     container_name: llamacpp-vulkan-mesa26
     profiles: [vulkan-mesa26]
     ports:
@@ -66,8 +77,8 @@ services:
 
   llama-sycl:
     <<: *card1
-    # oneAPI 2026.1.1, compute-runtime 26.18.38308, IGC 2.34.4, Level Zero 1.32.
-    image: ghcr.io/ggml-org/llama.cpp:full-intel@sha256:95778c3c82269cf387d4fc8b83685285f1eac2299771dc6af77e74964d2f8d43
+    # oneAPI 2026.1, b11669 (620d2225c).
+    image: ghcr.io/ggml-org/llama.cpp:full-intel@sha256:9ddf4bfc321a20226f831891fc9b40610f11a9a50e5171b876b1e608493babee
     container_name: llamacpp-sycl
     profiles: [sycl]
     ports:
@@ -85,10 +96,11 @@ services:
   # involved. Needs production chat stopped: make take-both / release-both.
   llama-sycl-2card:
     <<: *card1
-    image: ghcr.io/ggml-org/llama.cpp:full-intel@sha256:95778c3c82269cf387d4fc8b83685285f1eac2299771dc6af77e74964d2f8d43
+    # SYCL_IMAGE= tries another llama.cpp build on both cards without changing the pin.
+    image: ${SYCL_IMAGE:-ghcr.io/ggml-org/llama.cpp:full-intel@sha256:9ddf4bfc321a20226f831891fc9b40610f11a9a50e5171b876b1e608493babee}
     container_name: llamacpp-sycl-2card
     profiles: [sycl2]
-    devices:
+    devices: &both-cards
       - source: /dev/dri/by-path/pci-${CARD0_PCI:-0000:03:00.0}-card
         target: /dev/dri/card1
         permissions: rwm
@@ -105,5 +117,21 @@ services:
       - "127.0.0.1:8092:8080"
     environment:
       <<: *spec
-      LLAMA_ARG_SPLIT_MODE: ${SPLIT:-tensor}
+      # layer by default: tensor corrupts prompts past ~36k tokens (README.md).
+      LLAMA_ARG_SPLIT_MODE: ${SPLIT:-layer}
       ONEAPI_DEVICE_SELECTOR: level_zero:*
+
+  # Vulkan on Mesa 26.2 across both cards (make vulkan-2card), to compare with
+  # llama-sycl-2card. Only the two B70s' nodes are mapped, so Vulkan can't pick up
+  # the AMD iGPU.
+  llama-vulkan-2card:
+    <<: *card1
+    image: llamacpp-vulkan-mesa26:${VULKAN_COMMIT:-620d2225c}
+    container_name: llamacpp-vulkan-2card
+    profiles: [vulkan2]
+    devices: *both-cards
+    ports:
+      - "127.0.0.1:8094:8080"
+    environment:
+      <<: *spec
+      LLAMA_ARG_SPLIT_MODE: ${SPLIT:-layer}

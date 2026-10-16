@@ -13,13 +13,18 @@ internet ─► router ─► caddy ─► litellm ─┬─► vllm-lb ──�
 ```
 
 llama-swap runs the model containers that the GPU layout asks for
-(`llama-swap/layouts/layouts.conf`; `make mode M=split|tp2` from the repo root):
+(`llama-swap/layouts/layouts.conf`; `make mode M=split|tp2|review|big` from the repo root):
 
 - **split** (default): one Qwen per card. An image request makes llama-swap stop
   `qwen-vllm-2` and load qwen-image on the second card, and chat carries on on the first.
 - **tp2**: one Qwen across both cards, ~1.5x faster. An image request swaps
   `qwen-vllm-tp2` for `qwen-vllm` on the first card plus qwen-image on the second. Chat
   has no backend for ~70 s at each swap; `vllm-lb` holds new requests until one is up.
+- **review**: Qwen on the first card, Gemma 4 31B (`gemma-4-31B`) on the second. An
+  image request takes the second card from Gemma.
+- **big**: gpt-oss-120b (`gpt-oss-120b`) across both cards, and no Qwen. An image
+  request stops gpt-oss and starts `qwen-vllm` on the first card, so `Qwen3.8-27B`
+  works only while the image model is loaded.
 
 After 10 idle minutes llama-swap unloads qwen-image and puts the layout back.
 
@@ -29,7 +34,9 @@ models (llama-swap's `config.yaml`) are placed first, then each layout entry sta
 its cards are free, and everything else is stopped. To add a model: create its
 container (compose, `managed` profile), add a `card` line and, for a resident model, a
 place in a layout, and allow it in `docker-api/Caddyfile`; for an on-demand model, add
-an entry to `llama-swap/config.yaml` using `run-container` / `stop-container`.
+an entry to `llama-swap/config.yaml` using `run-container` / `stop-container`. The
+dashboard's Cluster row picks a new `card` line up by itself (`layout-exporter`), but
+it can only read the container's config once `docker-api/Caddyfile` allows it.
 
 | Service | Purpose |
 |---|---|
@@ -38,6 +45,7 @@ an entry to `llama-swap/config.yaml` using `run-container` / `stop-container`.
 | `vllm-lb` | Spreads chat over whichever vLLM instances are up (`/health` checks), and holds requests for up to 4 minutes while none is (a tp2 swap). Sticky per API key: caddy tags each request with the key's last 8 characters (`X-Affinity`), LiteLLM forwards it, and each key stays on one card so its prefix cache keeps hitting. It moves to the other card only while its own is down |
 | `llama-swap` | Starts the GPU layout's containers, loads qwen-image on the second card on demand (evicting the chat container there), and restores the layout after 10 idle minutes (`ttl`). On startup it applies the layout and stops qwen-image |
 | `docker-api` | Docker socket proxy for llama-swap. It allows only start, stop and inspect of the model containers |
+| `layout-exporter` | Publishes the configured layout, what runs on each card and each model container's serving config for Prometheus (`../qwen-vllm/monitoring/layout_exporter.py`). Reads `llama-swap/layouts/` and inspects the model containers through `docker-api` (GET only) |
 | `ddns` | Optional (`--profile ddns`). Keeps `DOMAIN` pointed at the home IP |
 
 Models: `Qwen3.8-27B` (chat, vision, tools, reasoning) and `qwen-image`
@@ -65,7 +73,8 @@ this machine's LAN IP, or use `http://<this machine's IP>/v1`.
 
 Coding agents: give each person (or each agent) its own key. Routing is sticky per key,
 so a key shared by many sessions puts them all on one card. Set the client's context
-limit to 131072 so it compacts before vLLM rejects a request. An opencode provider:
+limit to 131072 so it compacts before vLLM rejects a request (262144 if you stay on
+the `tp2` layout; see ../qwen-vllm/README.md). An opencode provider:
 
 ```json
 "local-qwen": {

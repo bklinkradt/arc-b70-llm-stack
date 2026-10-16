@@ -13,8 +13,8 @@ Prometheus + Grafana monitoring stack.
 | `vllm-tp2` | 8000 (localhost) | The same server across both cards (`--tensor-parallel-size=2`). Never runs alongside `vllm` |
 | `open-webui` | 3000 (all interfaces) | Chat UI, talks to the running instances through `../gateway`'s `vllm-lb` |
 | `grafana` | 3001 (all interfaces) | Dashboards (anonymous read-only; log in as admin to edit). Open WebUI and Grafana listen on the LAN; firewall them or bind them to 127.0.0.1 if that's not what you want |
-| `prometheus` | — | Scrapes the vLLM instances and the GPU exporter every 5 s, keeps 30 days |
-| `gpu-exporter` | — | Exports `xpu-smi` power, clocks, temperature, VRAM and bandwidth for the first B70 |
+| `prometheus` | — | Scrapes the vLLM instances, Gemma, the GPU exporter and `../gateway`'s `layout-exporter` every 5 s, keeps 30 days |
+| `gpu-exporter` | — | Exports `xpu-smi` power, clocks, temperature, VRAM and bandwidth for both B70s |
 
 ## Requirements
 
@@ -62,7 +62,9 @@ images and keeps two independent prefix caches. The choice survives restarts.
 
 The server supports tool calling (`qwen3_coder` parser), reasoning output
 (`qwen3` parser), up to 4 images per prompt (capped at ~4 MP), a 128k context
-and 4 concurrent sequences per card (8 for `vllm-tp2`).
+and 4 concurrent sequences per card. `vllm-tp2` runs 8 sequences and the model's
+full 262k context, which one card's KV cache can't hold. A request over 128k fails
+while the `tp2` layout has lent card 1 to qwen-image, since `vllm` stands in then.
 
 ## Documentation
 
@@ -113,7 +115,9 @@ worth knowing about:
 ## Benchmarking
 
 `bench.py` measures streaming decode speed against the local server, and `prefill.py`
-prompt-processing speed on unique 4k-63k-token prompts. Both only use the Python
+prompt-processing speed on unique 4k-63k-token prompts. `context.py` grows one
+conversation by ~16k tokens a turn up to ~250k, like a long agent session, and reports
+time to first token and decode speed at each depth. All three only use the Python
 standard library. `linkbench.py` measures the PCIe links and the two-card all-reduce;
 its docstring has the `docker run` line.
 
@@ -243,13 +247,60 @@ measured together), so TP=2 on 26.35 beats them at every load. `repro.py` found 
 40 rounds corrupted and 3 concurrent requests ran cleanly. Gen4 vs Gen5 made no
 difference to one card (~49 tok/s at temperature 0.7 either way).
 
+Long context on TP=2 with `--max-model-len=262144` (`context.py`, 2026-10-02): one
+conversation grown by ~16k tokens a turn, replies kept, so the prefix cache covers all
+but the new block. Time to first token is the prefill of that block, which slows as it
+attends to more context:
+
+| Prompt (tokens) | 32k | 63k | 127k | 190k | 238k | 238k, cold |
+|---|---:|---:|---:|---:|---:|---:|
+| Time to first token (s) | 9.3 | 12.9 | 19.8 | 26.8 | 34.2 | 265 |
+| Decode (tok/s) | 107 | 100 | 85 | 70 | 64 | 63 |
+
+The cold row is the same 238k prompt with nothing cached (897 tok/s).
+
+Prefill chunk size on TP=2 (`--max-num-batched-tokens`, `prefill.py` plus one ~126k
+prompt, 2026-10-02): larger chunks barely help, because 4096 already keeps both cards
+busy, and they cost KV cache and longer decode stalls for other requests. 4096 stays.
+
+| Chunk | 4k / 17k / 63k / 126k-token prompt (tok/s) | KV cache (tokens) |
+|---|---:|---:|
+| 4096 | 2654 / 2401 / 1775 / 1310 | 956k |
+| 8192 | 2640 / 2447 / 1796 / 1328 | 901k |
+| 16384 | 2659 / 2464 / 1832 / 1356 | 789k |
+
 ## Monitoring
 
-The Grafana dashboard covers token throughput, per-request decode speed, time
+The Grafana dashboard covers the GPU layout and what runs on each card, token throughput, per-request decode speed, time
 to first token, prompt sizes, prefix-cache hit rate, MTP acceptance by draft
 position, and GPU power, clocks, temperature, VRAM and memory bandwidth. The
 `xe` driver doesn't report GPU utilization, so memory read bandwidth serves as
 the load indicator.
+
+The top row, **Cluster**, shows the GPU configuration: the layout `make mode` picked,
+the layout the running containers add up to (amber while they differ: during a switch,
+while qwen-image holds card 1, or when a container crashed), which container and model
+hold each card, and a table of the running model servers with their engine, cards,
+tensor-parallel size, context length, slots, quantization, KV cache dtype, speculative
+decoding and health. `monitoring/layout_exporter.py` produces it: it runs as
+`layout-exporter` in `../gateway` (it needs the `docker-api` network), reads
+`layouts.conf` and the mode file, and inspects the model containers through the
+`docker-api` proxy (GET only), so it never sees the Docker socket. Every value comes
+from the container's launch command; a flag that isn't set shows empty. Its metrics:
+
+| Metric | Meaning |
+|---|---|
+| `local_serve_layout_info{layout}` | The configured layout |
+| `local_serve_layout_members{layout,container,priority}` | Each layout's containers, in priority order |
+| `local_serve_container_running{container,cards,engine,model,weights,tp,ctx,parallel,quant,kv,spec}` | 1 running, 0 stopped, -1 unknown (the inspect failed; the labels keep the last config read) |
+| `local_serve_container_state{container,state,health}` | Docker's status and healthcheck result |
+| `local_serve_card_container{card,container,model}` | 1 per running container on a card; `container="free"` (0) when none |
+| `local_serve_effective_layout{layout,configured}` | What runs, as a layout name (`split`, `tp2+qwen-image`, `mixed` when no layout fits, `none`, `unknown`): 1 = the configured layout, 0 = differs, -1 = unknown |
+| `local_serve_docker_api_up`, `local_serve_inspect_errors_total{container}`, `local_serve_layout_conf_errors_total`, `local_serve_layout_sample_age_seconds` | Exporter health |
+
+`python3 monitoring/check_layout_exporter.py` checks the exporter against a fake Docker
+API answering the recorded inspect output in `monitoring/fixtures/inspect/`; it touches
+nothing that's running.
 
 The dashboard JSON is generated. Edit `monitoring/gen_dashboard.py`, then run:
 

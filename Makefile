@@ -3,10 +3,10 @@
 COMPOSE := docker compose
 # The model containers. llama-swap starts and stops them to fit the GPU layout
 # (gateway/llama-swap/layouts/layouts.conf), so they are only ever created here.
-MANAGED := vllm vllm-2 vllm-tp2 qwen-image
+MANAGED := vllm vllm-2 vllm-tp2 qwen-image gemma gpt-oss
 LAYOUTS := gateway/llama-swap/layouts
 
-.PHONY: help network build up down restart ps logs bench ddns mode mtp mtp-down
+.PHONY: help network build up down restart ps logs bench ddns mode mtp mtp-down fp8 fp8-down
 
 help:
 	@echo "make build          build local images (vLLM runtime, qwen-image, llama-swap)"
@@ -17,7 +17,7 @@ help:
 	@echo "make logs [s=X]     follow logs, optionally for one service"
 	@echo "make bench          decode benchmark against qwen-vllm (see qwen-vllm/README.md)"
 	@echo "make ddns           start the optional dynamic DNS updater"
-	@echo "make mode [M=X]     show the GPU layout, or switch to X (split, tp2)"
+	@echo "make mode [M=X]     show the GPU layout, or switch to X (split, tp2, review, big)"
 	@echo "make mtp MTP_N=4    MTP draft-depth experiment on the second card (:8002); mtp-down reverts"
 
 network:
@@ -73,12 +73,27 @@ MTP_COMPOSE := $(COMPOSE) -f compose.yaml -f qwen-vllm/docker-compose.mtp.yml --
 # Borrows the second card: llama-swap stops, card 0 keeps serving chat on qwen-vllm
 # whatever the layout, and images are unavailable until mtp-down.
 mtp:
-	docker stop llama-swap qwen-vllm-2 qwen-vllm-tp2 qwen-image
+	docker stop llama-swap qwen-vllm-2 qwen-vllm-tp2 qwen-image gemma gpt-oss
 	docker start qwen-vllm
 	$(MTP_COMPOSE) up -d --force-recreate vllm-mtp
 
 mtp-down:
 	$(MTP_COMPOSE) rm -sf vllm-mtp
+	docker start llama-swap
+
+# Activation dtype for `make fp8` (bfloat16 or float16).
+FP8_DTYPE ?= bfloat16
+export FP8_DTYPE
+FP8_COMPOSE := $(COMPOSE) -f compose.yaml -f qwen-vllm/docker-compose.fp8.yml --profile fp8
+
+# Takes both cards: llama-swap and every model stop, so chat and images are down
+# until fp8-down.
+fp8:
+	docker stop llama-swap qwen-vllm qwen-vllm-2 qwen-vllm-tp2 qwen-image gemma gpt-oss
+	$(FP8_COMPOSE) up -d --force-recreate vllm-fp8
+
+fp8-down:
+	$(FP8_COMPOSE) rm -sf vllm-fp8
 	docker start llama-swap
 
 # Maintainer-only targets (make publish); absent from the public repo.

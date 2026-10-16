@@ -1,0 +1,97 @@
+{
+  "Name": "/gemma",
+  "State": {
+    "Status": "exited",
+    "Running": false,
+    "Paused": false,
+    "Restarting": false,
+    "OOMKilled": false,
+    "Dead": false,
+    "ExitCode": 0,
+    "Health": {
+      "Status": "unhealthy"
+    }
+  },
+  "Path": "/app/llama-server",
+  "Args": [
+    "--model",
+    "/models/gemma-4-31B-it-GGUF/gemma-4-31B-it-Q4_K_M.gguf",
+    "--alias",
+    "gemma-4-31B",
+    "--host",
+    "0.0.0.0",
+    "--port",
+    "8000",
+    "--n-gpu-layers",
+    "999",
+    "--ctx-size",
+    "131072",
+    "--flash-attn",
+    "on",
+    "--cache-type-k",
+    "q8_0",
+    "--cache-type-v",
+    "q8_0",
+    "--parallel",
+    "2",
+    "--kv-unified",
+    "--spec-type",
+    "draft-mtp",
+    "--model-draft",
+    "/models/gemma-4-31B-it-GGUF/mtp-gemma-4-31B-it.gguf",
+    "--spec-draft-n-max",
+    "3",
+    "--jinja",
+    "--metrics"
+  ],
+  "Config": {
+    "Image": "ghcr.io/ggml-org/llama.cpp:full-intel@sha256:9ddf4bfc321a20226f831891fc9b40610f11a9a50e5171b876b1e608493babee",
+    "Entrypoint": [
+      "/app/llama-server"
+    ],
+    "Cmd": [
+      "--model",
+      "/models/gemma-4-31B-it-GGUF/gemma-4-31B-it-Q4_K_M.gguf",
+      "--alias",
+      "gemma-4-31B",
+      "--host",
+      "0.0.0.0",
+      "--port",
+      "8000",
+      "--n-gpu-layers",
+      "999",
+      "--ctx-size",
+      "131072",
+      "--flash-attn",
+      "on",
+      "--cache-type-k",
+      "q8_0",
+      "--cache-type-v",
+      "q8_0",
+      "--parallel",
+      "2",
+      "--kv-unified",
+      "--spec-type",
+      "draft-mtp",
+      "--model-draft",
+      "/models/gemma-4-31B-it-GGUF/mtp-gemma-4-31B-it.gguf",
+      "--spec-draft-n-max",
+      "3",
+      "--jinja",
+      "--metrics"
+    ],
+    "Env": [
+      "ZE_AFFINITY_MASK=1",
+      "ONEAPI_DEVICE_SELECTOR=level_zero:*"
+    ]
+  },
+  "HostConfig": {
+    "Devices": [
+      {
+        "PathOnHost": "/dev/dri",
+        "PathInContainer": "/dev/dri",
+        "CgroupPermissions": "rwm"
+      }
+    ]
+  }
+}

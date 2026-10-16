@@ -10,12 +10,45 @@ model_list:
       api_key: none  # vLLM runs without a key behind the gateway
       # A vLLM instance always runs, except for ~70 s at each image swap in the tp2
       # layout, when vllm-lb holds the request; this covers that and long outputs.
-      timeout: 900
-      stream_timeout: 900
+      # 1800 s, not less than the agentic harness's own request timeout for this
+      # model: a gateway that gives up first leaves vLLM generating an abandoned
+      # request (the disconnect does not reach it), which then queues ahead of the
+      # harness's retry. The harness's largest observed request is ~28k output
+      # tokens, ~550 s alone on one card.
+      timeout: 1800
+      stream_timeout: 1800
     model_info:
       mode: chat
       max_input_tokens: 131072
       supports_vision: true
+      supports_function_calling: true
+      supports_reasoning: true
+
+  - model_name: gemma-4-31B
+    litellm_params:
+      model: openai/gemma-4-31B
+      api_base: http://gemma:8000/v1
+      api_key: none  # llama.cpp runs without a key behind the gateway
+      # Reviews read whole diffs: long prompts at ~620 tok/s, then slow decode.
+      timeout: 1800
+      stream_timeout: 1800
+    model_info:
+      mode: chat
+      max_input_tokens: 131072
+      supports_function_calling: true
+      supports_reasoning: true
+
+  - model_name: gpt-oss-120b
+    litellm_params:
+      model: openai/gpt-oss-120b
+      api_base: http://gpt-oss:8000/v1
+      api_key: none  # llama.cpp runs without a key behind the gateway
+      # Only the big layout runs it. ~60 tok/s decode at 36k tokens, ~480 tok/s prefill.
+      timeout: 1800
+      stream_timeout: 1800
+    model_info:
+      mode: chat
+      max_input_tokens: 65536
       supports_function_calling: true
       supports_reasoning: true
 

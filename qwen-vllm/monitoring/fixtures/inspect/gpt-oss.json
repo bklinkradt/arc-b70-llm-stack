@@ -1,0 +1,89 @@
+{
+  "Name": "/gpt-oss",
+  "State": {
+    "Status": "exited",
+    "Running": false,
+    "Paused": false,
+    "Restarting": false,
+    "OOMKilled": false,
+    "Dead": false,
+    "ExitCode": 0,
+    "Health": {
+      "Status": "unhealthy"
+    }
+  },
+  "Path": "/app/llama-server",
+  "Args": [
+    "--model",
+    "/models/gpt-oss-120b-GGUF/gpt-oss-120b-MXFP4.gguf",
+    "--alias",
+    "gpt-oss-120b",
+    "--host",
+    "0.0.0.0",
+    "--port",
+    "8000",
+    "--n-gpu-layers",
+    "999",
+    "--split-mode",
+    "layer",
+    "--ctx-size",
+    "65536",
+    "--flash-attn",
+    "on",
+    "--cache-type-k",
+    "q8_0",
+    "--cache-type-v",
+    "q8_0",
+    "--parallel",
+    "4",
+    "--kv-unified",
+    "--jinja",
+    "--metrics"
+  ],
+  "Config": {
+    "Image": "ghcr.io/ggml-org/llama.cpp:full-intel@sha256:9ddf4bfc321a20226f831891fc9b40610f11a9a50e5171b876b1e608493babee",
+    "Entrypoint": [
+      "/app/llama-server"
+    ],
+    "Cmd": [
+      "--model",
+      "/models/gpt-oss-120b-GGUF/gpt-oss-120b-MXFP4.gguf",
+      "--alias",
+      "gpt-oss-120b",
+      "--host",
+      "0.0.0.0",
+      "--port",
+      "8000",
+      "--n-gpu-layers",
+      "999",
+      "--split-mode",
+      "layer",
+      "--ctx-size",
+      "65536",
+      "--flash-attn",
+      "on",
+      "--cache-type-k",
+      "q8_0",
+      "--cache-type-v",
+      "q8_0",
+      "--parallel",
+      "4",
+      "--kv-unified",
+      "--jinja",
+      "--metrics"
+    ],
+    "Env": [
+      "ZE_AFFINITY_MASK=0,1",
+      "ONEAPI_DEVICE_SELECTOR=level_zero:*"
+    ]
+  },
+  "HostConfig": {
+    "Devices": [
+      {
+        "PathOnHost": "/dev/dri",
+        "PathInContainer": "/dev/dri",
+        "CgroupPermissions": "rwm"
+      }
+    ]
+  }
+}

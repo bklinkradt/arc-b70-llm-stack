@@ -25,22 +25,28 @@ other GPUs or models will need their flags reviewed.
 |---|---|
 | [`qwen-vllm/`](qwen-vllm/README.md) | vLLM serving Qwen3.8-27B, one instance per card or one across both (tensor parallel), plus Open WebUI, Prometheus and Grafana. Also has the benchmark and corruption-check scripts and the Intel XPU stack guide |
 | [`qwen-image/`](qwen-image/README.md) | Qwen-Image-2.1 with a Gradio UI and an OpenAI-compatible images API |
+| [`gemma/`](gemma/README.md) | Gemma 4 31B on llama.cpp SYCL, a reviewer for Qwen's code on card 1 in the `review` layout |
+| [`gpt-oss/`](gpt-oss/README.md) | gpt-oss-120b on llama.cpp SYCL across both cards in the `big` layout: the largest model served, ~60-95 tok/s decode |
 | [`gateway/`](gateway/README.md) | Caddy (TLS), LiteLLM (API keys, limits, usage), the chat load balancer, and llama-swap, which places the model containers on the cards (the GPU layout) and lends the second card to images on demand |
-| [`llamacpp-bench/`](llamacpp-bench/README.md) | Standalone experiment, not part of the stack: llama.cpp Vulkan vs SYCL (Vulkan decodes faster on Mesa 26.2+), a Gemma garbled-output check, its two-card split modes, and tensor split + MTP vs vLLM TP=2. vLLM stays the choice |
+| [`llamacpp-bench/`](llamacpp-bench/README.md) | Standalone experiment, not part of the stack: llama.cpp Vulkan vs SYCL (Vulkan decodes faster on Mesa 26.2+), a Gemma garbled-output check, its two-card split modes, tensor split + MTP vs vLLM TP=2, and 106-122B MoEs on both cards (GLM-4.5-Air, Qwen3.5-122B, gpt-oss-120b). vLLM stays the choice for Qwen3.8-27B |
 
 ```
 internet ─► caddy ─► litellm ─┬─► vllm-lb ───┬─► qwen-vllm      B70 #1     split layout
             TLS      API keys  │   chat        ├─► qwen-vllm-2    B70 #2     split layout
                                │               └─► qwen-vllm-tp2  B70 #1+#2  tp2 layout
+                               ├─► gemma ────────► gemma          B70 #2     review layout
+                               ├─► gpt-oss ──────► gpt-oss        B70 #1+#2  big layout
                                └─► llama-swap ───► qwen-image     B70 #2     on demand
                                    images
 ```
 
-`make mode M=split|tp2` picks the GPU layout: one Qwen per card, or one across both cards
-(~1.5x faster). Either way an image request takes card 1, and llama-swap puts the layout
-back after 10 idle minutes. See `qwen-vllm/README.md` for the trade-offs.
+`make mode M=split|tp2|review|big` picks the GPU layout: one Qwen per card, one across
+both cards (~1.5x faster), Qwen on card 0 with Gemma 4 31B reviewing on card 1, or
+gpt-oss-120b across both cards with no Qwen. In every
+layout an image request takes card 1, and llama-swap puts the layout back after 10 idle
+minutes. See `qwen-vllm/README.md` for the trade-offs.
 
-`compose.yaml` pulls the three compose files into one project, `local-serve`. Each part
+`compose.yaml` pulls the five compose files into one project, `local-serve`. Each part
 keeps its own compose file and README, and its relative paths resolve from its own
 directory, so `gateway/.env` stays in `gateway/`.
 
@@ -58,7 +64,7 @@ Needs Docker with Compose 2.20 or newer (for `include:`) and `make`.
 4. `make build && make up`
 
 `make up` creates the shared `llm-net` network if needed, and creates the model
-containers (`qwen-vllm`, `qwen-vllm-2`, `qwen-vllm-tp2`, `qwen-image`) without starting
+containers (`qwen-vllm`, `qwen-vllm-2`, `qwen-vllm-tp2`, `qwen-image`, `gemma`, `gpt-oss`) without starting
 them. They are in the `managed` profile because llama-swap decides which of them hold
 the cards. Then it starts everything else, and llama-swap starts the layout's
 containers. The layout is `split` until `make mode M=tp2`.
@@ -71,14 +77,14 @@ make logs s=litellm   # follow one service (omit s= for all)
 make restart s=caddy  # after editing a config file
 make down             # stop everything; volumes (keys, certs, dashboards) are kept
 make bench args="5 code 1 0"
-make mode / make mode M=tp2   # show / switch the GPU layout (split, tp2)
+make mode / make mode M=tp2   # show / switch the GPU layout (split, tp2, review, big)
 make mtp MTP_N=4 / make mtp-down   # MTP draft-depth experiment on the second card
 ```
 
 Run `docker compose` commands from this directory. Running one from a subdirectory
 starts a separate compose project, and it clashes with the fixed container names.
 
-Local endpoints: vLLM `localhost:8000` (`qwen-vllm` or `qwen-vllm-tp2`) / `:8001`, LiteLLM admin `localhost:4000/ui`,
+Local endpoints: vLLM `localhost:8000` (`qwen-vllm` or `qwen-vllm-tp2`) / `:8001`, Gemma `:8003` (review layout), gpt-oss `:8004` (big layout), LiteLLM admin `localhost:4000/ui`,
 Open WebUI `:3000`, Grafana `:3001`, qwen-image Gradio `localhost:7860`.
 
 ## Data

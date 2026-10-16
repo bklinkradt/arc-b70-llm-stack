@@ -1,0 +1,75 @@
+# Gemma 4 31B on the second B70, as a reviewer for what Qwen (../qwen-vllm) writes.
+# llama.cpp SYCL rather than vLLM: it's the setup Gemma was tested on in
+# ../llamacpp-bench (no garbled output, 5-6x Vulkan's prompt speed). Only the `review`
+# GPU layout runs it (`make mode M=review`): Qwen on card 0, this on card 1.
+# 2026-10-11..12 it ran on vLLM (README.md): ~1.5x quicker in the bake-off, but its
+# engine segfaulted on a layout-switch start and the 49k context capped the
+# harness's reviews; back on llama.cpp since 2026-10-12. It listens on 8000 inside
+# the container, as vLLM did, so the gateway's api_base and Prometheus are unchanged.
+name: gemma
+
+services:
+  gemma:
+    # Same llama.cpp build as ../gpt-oss and ../llamacpp-bench: b11669 (commit 620d2225c),
+    # oneAPI 2026.1. Since 2026-10-16; it measured the same as b11243 (README.md).
+    # GEMMA_IMAGE= tries another llama.cpp build; `make up` recreates the container with it.
+    image: ${GEMMA_IMAGE:-ghcr.io/ggml-org/llama.cpp:full-intel@sha256:9ddf4bfc321a20226f831891fc9b40610f11a9a50e5171b876b1e608493babee}
+    # Fixed name: llama-swap's gpu-layout (../gateway) starts and stops it by name.
+    container_name: gemma
+    # llama-swap owns the lifecycle, so `docker compose up` must not start it and
+    # auto-restart must not bring it back next to whatever took its card.
+    profiles: [managed]
+    restart: "no"
+    # Level Zero lists only the Intel cards, in PCI order; ZE_AFFINITY_MASK picks card 1
+    # (PCI 08:00.0), as for ../qwen-vllm's vllm-2.
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "${VIDEO_GID:-39}"   # video; `getent group video render` on your host
+      - "${RENDER_GID:-105}" # render
+    environment:
+      ZE_AFFINITY_MASK: "1"
+      ONEAPI_DEVICE_SELECTOR: level_zero:*
+    volumes:
+      - ${MODELS_DIR:-${HOME}/models}:/models:ro
+    # Localhost only: remote access goes through the gateway, which adds API keys.
+    ports:
+      - "127.0.0.1:8003:8000"
+    networks:
+      - default
+      - llm-net
+    entrypoint: ["/app/llama-server"]
+    # Flag and value as separate items: llama.cpp rewrites "_" to "-" in "--flag=value".
+    command: [
+      # GEMMA_MODEL / GEMMA_DRAFT / GEMMA_ALIAS swap in another Gemma (paths under
+      # MODELS_DIR), e.g. the 26B-A4B MoE; `make up` recreates the container with them.
+      "--model", "/models/${GEMMA_MODEL:-gemma-4-31B-it-GGUF/gemma-4-31B-it-Q4_K_M.gguf}",
+      "--alias", "${GEMMA_ALIAS:-gemma-4-31B}",
+      "--host", "0.0.0.0",
+      "--port", "8000",
+      "--n-gpu-layers", "999",
+      "--ctx-size", "131072",
+      # q8_0 halves the KV cache next to f16 (needs flash attention for V).
+      "--flash-attn", "on",
+      "--cache-type-k", "q8_0",
+      "--cache-type-v", "q8_0",
+      # Two slots sharing one KV pool: a review session's main agent and a subagent.
+      "--parallel", "2",
+      "--kv-unified",
+      # MTP with Gemma's separate draft head, 3 drafts like Qwen in production.
+      "--spec-type", "draft-mtp",
+      "--model-draft", "/models/${GEMMA_DRAFT:-gemma-4-31B-it-GGUF/mtp-gemma-4-31B-it.gguf}",
+      "--spec-draft-n-max", "3",
+      "--jinja",
+      "--metrics",
+    ]
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 600s
+
+networks:
+  llm-net:
+    external: true

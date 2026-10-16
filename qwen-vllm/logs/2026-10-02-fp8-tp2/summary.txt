@@ -1,0 +1,16 @@
+FP8 checkpoint (Qwen3.8-27B-FP8, block-wise e4m3 128x128, dynamic activations) vs
+INT4 (RedHatAI W4A16) on TP=2, 2026-10-02, runtime 26.35, MTP 3, same flags as vllm-tp2.
+bench.py at temperature 0, prefill.py. Baseline: ../2026-10-01-tp2-runtime-26.35.
+
+                        INT4 bf16       FP8 bf16        FP8 fp16
+Decode, tok/s
+  code / prose          109.0 / 82.9    62.1 / 46.3     60.7 / 45.5
+  code / prose x4 avg   97.0 / 73.4     58.2 / 42.8     57.8 / 42.3
+Prefill, tok/s
+  4k / 17k / 63k        2603/2369/1775  1649/1610/1446  1649/1612/1444
+Weights per card        ~9.5 GiB        14.7 GiB        14.7 GiB
+
+Kernel: XPUFp8BlockScaledMMKernel for Fp8LinearMethod; GDN decode "cuda", Triton/FLA
+GDN prefill in both dtypes, so the ESIMD FP8/fp16 GDN fast paths never engaged.
+FP8 has no kv_cache_scheme, so its KV cache is bf16 (INT4's checkpoint makes it FP8).
+0 xe faults. repro.py not run: FP8 lost on speed, so it was not a candidate.

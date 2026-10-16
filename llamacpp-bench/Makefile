@@ -1,25 +1,31 @@
 # llama.cpp Vulkan vs SYCL experiment. Run from the repo root with `make -C llamacpp-bench <target>`.
 # See README.md for the procedure.
 
-COMPOSE := docker compose --profile vulkan --profile sycl --profile sycl2 --profile vulkan-mesa26
+COMPOSE := docker compose --profile vulkan --profile sycl --profile sycl2 --profile vulkan-mesa26 --profile vulkan2
 # Path under $MODELS_DIR (default ~/models).
 MODEL ?= Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q4_K_M.gguf
 SPEC ?= none
 # Server slots (concurrent requests) and the sycl-2card split mode.
 PARALLEL ?= 1
-SPLIT ?= tensor
+# tensor corrupts long prompts in this build (README.md), so layer is the default.
+SPLIT ?= layer
 # GGML_SYCL_ENABLE_OPT for the one-card sycl server, and the server's model name.
 SYCL_OPT ?= 1
 ALIAS ?= Qwen3.8-27B
-export MODEL SPEC PARALLEL SPLIT SYCL_OPT ALIAS
+# Context size, MoE layers whose experts stay in RAM, and KV cache type (f16, q8_0).
+CTX ?= 32768
+CPU_MOE ?= 0
+KV ?= f16
+export MODEL SPEC PARALLEL SPLIT SYCL_OPT ALIAS CTX CPU_MOE KV
 BENCH_ARGS := -m /models/$(MODEL) -ngl 999 -fa 1 -p 512,4096 -n 128 -r 5
 # none = card 0 alone, the baseline. row crashes at load in this SYCL build (see README).
-SPLITS := none layer tensor
+SPLITS ?= none layer tensor
 
 .PHONY: help take-card release-card vulkan sycl devices-vulkan devices-sycl \
 	llama-bench-vulkan llama-bench-sycl bench-vulkan bench-sycl down \
 	vulkan-mesa26 devices-vulkan-mesa26 llama-bench-vulkan-mesa26 bench-vulkan-mesa26 \
-	take-both release-both split-bench sycl-2card bench-sycl-2card
+	take-both release-both split-bench sycl-2card bench-sycl-2card \
+	vulkan-2card split-bench-vulkan bench-vulkan-2card
 
 help:
 	@echo "take-card / release-card      borrow the second B70 from llama-swap, and give it back"
@@ -31,14 +37,19 @@ help:
 	@echo "split-bench                   SYCL on both cards: -sm none/layer/row/tensor, single stream and batched"
 	@echo "sycl-2card                    server on both cards, 127.0.0.1:8092 (SPLIT=tensor, PARALLEL=, SPEC=)"
 	@echo "bench-sycl-2card              ../qwen-vllm/bench.py against it"
+	@echo "vulkan-2card                  Vulkan (Mesa 26.2) server on both cards, 127.0.0.1:8094"
+	@echo "split-bench-vulkan            split-bench on Vulkan (both cards)"
+	@echo "bench-vulkan-2card            ../qwen-vllm/bench.py against it"
 	@echo "down                          stop and remove the experiment containers"
 	@echo "MODEL=<path under $$MODELS_DIR> overrides the GGUF (default $(MODEL))"
 	@echo "SPEC=draft-mtp                turns on MTP (3 drafts) for vulkan / sycl"
+	@echo "CTX= CPU_MOE=N KV=q8_0        context size, MoE layers kept in RAM, KV cache type"
+	@echo "SPLITS=\"layer tensor\"         split-bench modes (none = card 0 only)"
 
 # Same as `make mtp` in the root: card 0's vLLM keeps serving chat whatever the GPU
 # layout; images are unavailable until release-card.
 take-card:
-	docker stop llama-swap qwen-vllm-2 qwen-vllm-tp2 qwen-image
+	docker stop llama-swap qwen-vllm-2 qwen-vllm-tp2 qwen-image gemma gpt-oss
 	docker start qwen-vllm
 
 # llama-swap restores the GPU layout when it starts.
@@ -55,31 +66,48 @@ release-both: release-card
 # (llama-batched-bench), the load where vLLM's TP=2 paid off.
 split-bench:
 	$(COMPOSE) run --rm --no-deps --entrypoint /app/llama-bench llama-sycl-2card \
-		-m /models/$(MODEL) -ngl 999 -fa 1 -p 512,4096 -n 128 -r 3 -sm $(shell echo $(SPLITS) | tr ' ' ,)
+		-m /models/$(MODEL) -ngl 999 -fa 1 -p 512,4096 -n 128 -r 3 -ncmoe $(CPU_MOE) -sm $(shell echo $(SPLITS) | tr ' ' ,)
 	for sm in $(SPLITS); do \
 		echo "== split-mode $$sm"; \
 		$(COMPOSE) run --rm --no-deps --entrypoint /app/llama-batched-bench llama-sycl-2card \
-			-m /models/$(MODEL) -ngl 999 -fa on -sm $$sm -c 16384 -npp 512 -ntg 128 -npl 1,4,8,16; \
+			-m /models/$(MODEL) -ngl 999 -fa on -ncmoe $(CPU_MOE) -sm $$sm -c 16384 -npp 512 -ntg 128 -npl 1,4,8,16; \
 	done
 
 sycl-2card:
-	$(COMPOSE) rm -sf llama-vulkan llama-sycl llama-vulkan-mesa26
+	$(COMPOSE) rm -sf llama-vulkan llama-sycl llama-vulkan-mesa26 llama-vulkan-2card
 	$(COMPOSE) up -d llama-sycl-2card
 
 bench-sycl-2card:
 	BENCH_URL=http://localhost:8092 python3 ../qwen-vllm/bench.py $(args)
 
+# Same as split-bench and sycl-2card, on Vulkan (Mesa 26.2).
+split-bench-vulkan:
+	$(COMPOSE) run --rm --no-deps --entrypoint /app/llama-bench llama-vulkan-2card \
+		-m /models/$(MODEL) -ngl 999 -fa 1 -p 512,4096 -n 128 -r 3 -ncmoe $(CPU_MOE) -sm $(shell echo $(SPLITS) | tr ' ' ,)
+	for sm in $(SPLITS); do \
+		echo "== split-mode $$sm"; \
+		$(COMPOSE) run --rm --no-deps --entrypoint /app/llama-batched-bench llama-vulkan-2card \
+			-m /models/$(MODEL) -ngl 999 -fa on -ncmoe $(CPU_MOE) -sm $$sm -c 16384 -npp 512 -ntg 128 -npl 1,4,8,16; \
+	done
+
+vulkan-2card:
+	$(COMPOSE) rm -sf llama-vulkan llama-sycl llama-vulkan-mesa26 llama-sycl-2card
+	$(COMPOSE) up -d llama-vulkan-2card
+
+bench-vulkan-2card:
+	BENCH_URL=http://localhost:8094 python3 ../qwen-vllm/bench.py $(args)
+
 vulkan:
-	$(COMPOSE) rm -sf llama-sycl llama-sycl-2card llama-vulkan-mesa26
+	$(COMPOSE) rm -sf llama-sycl llama-sycl-2card llama-vulkan-mesa26 llama-vulkan-2card
 	$(COMPOSE) up -d llama-vulkan
 
 sycl:
-	$(COMPOSE) rm -sf llama-vulkan llama-sycl-2card llama-vulkan-mesa26
+	$(COMPOSE) rm -sf llama-vulkan llama-sycl-2card llama-vulkan-mesa26 llama-vulkan-2card
 	$(COMPOSE) up -d llama-sycl
 
 # Vulkan on Mesa 26.2 (vulkan-mesa26/Dockerfile), server on 127.0.0.1:8093.
 vulkan-mesa26:
-	$(COMPOSE) rm -sf llama-vulkan llama-sycl llama-sycl-2card
+	$(COMPOSE) rm -sf llama-vulkan llama-sycl llama-sycl-2card llama-vulkan-2card
 	$(COMPOSE) up -d llama-vulkan-mesa26
 
 devices-vulkan-mesa26:

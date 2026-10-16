@@ -118,7 +118,8 @@ services:
       VLLM_WORKER_MULTIPROC_METHOD: spawn
     # Compose replaces `command` wholesale, and `vllm serve` requires the model as its
     # first argument, so this repeats vllm's list with the TP flag and twice the
-    # sequences (one server now carries what vllm and vllm-2 did). Keep them in sync.
+    # sequences (one server now carries what vllm and vllm-2 did) and twice the context.
+    # Keep the rest in sync.
     command:
       - /llm/models/Qwen3.8-27B-INT4
       - --tensor-parallel-size=2
@@ -128,7 +129,9 @@ services:
       - --limit-mm-per-prompt={"image":4,"video":0}
       - --mm-processor-kwargs={"max_pixels":4194304}
       - --gpu-memory-utilization=0.92
-      - --max-model-len=131072
+      # The model's native 262k window, which one card can't hold (195k KV tokens) but
+      # two can (882k KV tokens, ~3.4 full-length requests).
+      - --max-model-len=262144
       - --max-num-seqs=8
       - --max-num-batched-tokens=4096
       - --enable-prefix-caching
@@ -158,7 +161,7 @@ services:
 
   # --- Monitoring: Grafana dashboard at http://<host>:3001 ---
 
-  # Publishes B70 power/clock/temperature/VRAM/bandwidth from xpu-smi for
+  # Publishes power/clock/temperature/VRAM/bandwidth of both B70s from xpu-smi for
   # Prometheus. Reuses the vLLM image (already on disk) because it ships xpu-smi 2.x.
   gpu-exporter:
     image: vllm/vllm-openai-xpu:v0.30.0@sha256:fc0e112afb64e3a06fe8daff34652435822a629412f38efce8f0f67a46636b8d
@@ -170,7 +173,8 @@ services:
       - "${VIDEO_GID:-39}"   # video; `getent group video render` on your host
       - "${RENDER_GID:-105}" # render
     environment:
-      ZE_AFFINITY_MASK: "0"
+      # Both B70s, by xpu-smi device id (0 = PCI 03:00.0, 1 = 08:00.0).
+      XPU_DEVICES: "0,1"
     volumes:
       - /dev/dri/by-path:/dev/dri/by-path:ro
       - ./monitoring/xpu_exporter.py:/xpu_exporter.py:ro

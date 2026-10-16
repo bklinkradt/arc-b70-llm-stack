@@ -10,7 +10,8 @@ name: gateway
 #
 # llama-swap places every model container (llama-swap/gpu-layout.sh,
 # llama-swap/layouts/layouts.conf). It reaches Docker only through docker-api, which
-# allows start/stop/inspect of those containers and nothing else.
+# allows start/stop/inspect of those containers and nothing else. layout-exporter
+# reads the same layouts and inspects the same containers for the dashboard.
 
 services:
   caddy:
@@ -87,6 +88,30 @@ services:
     depends_on:
       - docker-api
 
+  # Publishes the GPU layout (configured and actually running) and each model
+  # container's serving config for Prometheus and the Grafana dashboard
+  # (../qwen-vllm/monitoring/layout_exporter.py). Reads layouts.conf and the mode file,
+  # and inspects the model containers through docker-api (GET only; it never sees the
+  # socket). Stdlib Python, so it reuses the slim Python image.
+  layout-exporter:
+    image: python:3.12-slim@sha256:dddfd7e07f9d15aeeca61529320492139d21cac7f0070c00609243e51e4e0016
+    container_name: layout-exporter
+    restart: unless-stopped
+    user: "65534:65534"
+    read_only: true
+    networks:
+      - default     # Prometheus scrapes it on :9102
+      - docker-api
+    environment:
+      DOCKER_HOST: tcp://docker-api:2375
+      LAYOUTS_DIR: /layouts
+    volumes:
+      - ../qwen-vllm/monitoring/layout_exporter.py:/layout_exporter.py:ro
+      - ./llama-swap/layouts:/layouts:ro
+    entrypoint: ["python3", "/layout_exporter.py"]
+    depends_on:
+      - docker-api
+
   # Spreads chat over the vLLM instances that are up; see vllm-lb/Caddyfile.
   vllm-lb:
     image: caddy:2.11.4@sha256:0c994536bddb66445885237f1a5dcc1916bccea922661c76b4e9fc24061f9b52
@@ -122,7 +147,8 @@ networks:
   # Shared with ../qwen-vllm and ../qwen-image; the root Makefile creates it.
   llm-net:
     external: true
-  # No outside access: only llama-swap can talk to the Docker socket proxy.
+  # No outside access: only llama-swap (start/stop/inspect) and layout-exporter
+  # (inspect) talk to the Docker socket proxy.
   docker-api:
     internal: true
 

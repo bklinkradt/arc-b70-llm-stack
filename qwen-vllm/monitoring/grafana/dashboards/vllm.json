@@ -1,5 +1,5 @@
 {
-  "title": "Qwen3.8-27B on Arc Pro B70",
+  "title": "Local LLMs on 2x Arc Pro B70",
   "uid": "qwen-vllm",
   "editable": true,
   "graphTooltip": 1,
@@ -11,13 +11,15 @@
   "schemaVersion": 41,
   "tags": [
     "vllm",
-    "qwen"
+    "qwen",
+    "gemma",
+    "layout"
   ],
   "panels": [
     {
       "type": "row",
-      "title": "Overview (last 5 minutes)",
-      "id": 1,
+      "title": "Cluster: GPU layout and model servers",
+      "id": 101,
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -29,9 +31,9 @@
     },
     {
       "type": "stat",
-      "title": "Decode speed",
-      "description": "Average per-request generation speed (tokens/s) over requests finished in the last 5 minutes.",
-      "id": 2,
+      "title": "Configured layout",
+      "description": "The GPU layout `make mode` picked (gateway/llama-swap/layouts/mode): split = one Qwen per card, tp2 = one Qwen across both cards, review = Qwen on card 0 and Gemma on card 1, big = gpt-oss-120b across both cards.",
+      "id": 102,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -45,7 +47,1700 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(vllm:request_time_per_output_token_seconds_count[5m])) / sum(rate(vllm:request_time_per_output_token_seconds_sum[5m]))",
+          "expr": "local_serve_layout_info",
+          "legendFormat": "{{layout}}",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3987e5",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [],
+          "noValue": "no data"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "name",
+        "justifyMode": "center",
+        "orientation": "vertical",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Running layout",
+      "description": "What the running containers add up to. Green: the configured layout. Amber: something else, e.g. during a layout switch, while qwen-image holds card 1 (\"+qwen-image\"), or \"mixed\" when no layout fits (a container still starting or crashed). Red: the Docker API did not answer.",
+      "id": 103,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 4,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "local_serve_effective_layout",
+          "legendFormat": "{{layout}}",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#d03b3b",
+                "value": null
+              },
+              {
+                "color": "#fab219",
+                "value": 0
+              },
+              {
+                "color": "#0ca30c",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [],
+          "noValue": "no data"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "name",
+        "justifyMode": "center",
+        "orientation": "vertical",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Card 0 (PCI 03:00.0)",
+      "description": "Model container(s) running on card 0 and the model each serves. Grey = free. A container counts from the moment it starts, before its model has loaded.",
+      "id": 104,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 9,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "local_serve_card_container{card=\"0\"}",
+          "legendFormat": "{{container}}  {{model}}",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#d03b3b",
+                "value": null
+              },
+              {
+                "color": "#8e8e8e",
+                "value": 0
+              },
+              {
+                "color": "#3987e5",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [],
+          "noValue": "no data"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "name",
+        "justifyMode": "center",
+        "orientation": "vertical",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Card 1 (PCI 08:00.0)",
+      "description": "Model container(s) running on card 1 and the model each serves. Grey = free. A container counts from the moment it starts, before its model has loaded.",
+      "id": 105,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 15,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "local_serve_card_container{card=\"1\"}",
+          "legendFormat": "{{container}}  {{model}}",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#d03b3b",
+                "value": null
+              },
+              {
+                "color": "#8e8e8e",
+                "value": 0
+              },
+              {
+                "color": "#3987e5",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [],
+          "noValue": "no data"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "name",
+        "justifyMode": "center",
+        "orientation": "vertical",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Layout exporter",
+      "description": "Whether layout-exporter could inspect every model container through the docker-api proxy in its last poll. Red with no data: the exporter itself is down.",
+      "id": 106,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 21,
+        "y": 1
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "local_serve_docker_api_up",
+          "legendFormat": "Docker API",
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#d03b3b",
+                "value": null
+              },
+              {
+                "color": "#0ca30c",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "down"
+                },
+                "1": {
+                  "text": "ok"
+                }
+              }
+            }
+          ],
+          "noValue": "exporter down"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "justifyMode": "center",
+        "orientation": "vertical",
+        "wideLayout": true,
+        "showPercentChange": false
+      }
+    },
+    {
+      "type": "table",
+      "title": "Model servers running",
+      "id": 107,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "description": "Each running model container's serving config, read from its launch command (docker inspect): TP = --tensor-parallel-size; Context = --max-model-len (vLLM) or --ctx-size (llama.cpp, shared by the slots); Slots / max seqs = --max-num-seqs (vLLM) or --parallel (llama.cpp); Quant = --quantization, else read from the weights' name; KV cache dtype = --kv-cache-dtype (vLLM, auto = the model's dtype) or --cache-type-k/-v (llama.cpp). Empty = not set or not applicable. Health = the container's healthcheck (starting while the model loads).",
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(local_serve_container_running == 1) * on (container) group_left (state, health) local_serve_container_state",
+          "instant": true,
+          "range": false,
+          "format": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Health"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "healthy": {
+                        "color": "#0ca30c"
+                      },
+                      "starting": {
+                        "color": "#fab219"
+                      },
+                      "unhealthy": {
+                        "color": "#d03b3b"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true,
+              "__name__": true,
+              "job": true,
+              "instance": true,
+              "state": true
+            },
+            "indexByName": {
+              "container": 0,
+              "cards": 1,
+              "model": 2,
+              "engine": 3,
+              "tp": 4,
+              "ctx": 5,
+              "parallel": 6,
+              "quant": 7,
+              "kv": 8,
+              "spec": 9,
+              "weights": 10,
+              "health": 11
+            },
+            "renameByName": {
+              "container": "Container",
+              "cards": "Card(s)",
+              "model": "Model",
+              "engine": "Engine",
+              "tp": "TP",
+              "ctx": "Context",
+              "parallel": "Slots / max seqs",
+              "quant": "Quant",
+              "kv": "KV cache dtype",
+              "spec": "Speculative",
+              "weights": "Weights",
+              "health": "Health"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Both GPUs combined",
+      "id": 1,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Generated tokens/s (5 min)",
+      "description": "Tokens generated per second across every model on both cards, averaged over 5 minutes.",
+      "id": 2,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum(rate(vllm:generation_tokens_total[5m])) or vector(0)) + (sum(rate(llamacpp:tokens_predicted_total[5m])) or vector(0))",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: tok/s",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3987e5",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "idle"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Prompt tokens/s (5 min)",
+      "description": "Prompt tokens read per second across every model on both cards (including tokens served from cache), averaged over 5 minutes.",
+      "id": 3,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum(rate(vllm:prompt_tokens_total[5m])) or vector(0)) + (sum(rate(llamacpp:prompt_tokens_total[5m])) or vector(0))",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: tok/s",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3987e5",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "idle"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Total power",
+      "description": "Both B70s together.",
+      "id": 4,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(max by (device) (xpu_power_watts))",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3987e5",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "idle"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Combined memory bandwidth",
+      "description": "Memory read bandwidth of both B70s together.",
+      "id": 5,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(max by (device) (xpu_memory_read_bytes_per_second))",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3987e5",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "idle"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Generated tokens/s by model (stacked)",
+      "description": "Each model's generation rate, stacked: the top edge is the total across both cards. TP=2 shows as one model on both cards.",
+      "id": 6,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 16
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (model) (rate(vllm:generation_tokens_total[$__rate_interval])) or sum by (model) (rate(llamacpp:tokens_predicted_total[$__rate_interval]))",
+          "legendFormat": "{{model}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: tok/s",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#3987e5"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 35,
+            "showPoints": "never",
+            "spanNulls": 30000,
+            "axisSoftMin": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Qwen3.8-27B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Qwen3.8-27B (TP=2)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d95926"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "gemma-4-31B"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#199e70"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "gpt-oss-120b"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#c98500"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Power, both cards (stacked)",
+      "description": "Each card's power, stacked: the top edge is the total draw of both B70s.",
+      "id": 7,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 16
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (device) (xpu_power_watts)",
+          "legendFormat": "card {{device}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#3987e5"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 35,
+            "showPoints": "never",
+            "spanNulls": 30000,
+            "axisSoftMin": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "card 0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "card 1"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d95926"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory bandwidth, both cards (stacked)",
+      "description": "Each card's memory read bandwidth, stacked: the top edge is the combined bandwidth.",
+      "id": 8,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 16
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (device) (xpu_memory_read_bytes_per_second)",
+          "legendFormat": "card {{device}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#3987e5"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 35,
+            "showPoints": "never",
+            "spanNulls": 30000,
+            "axisSoftMin": 0,
+            "gradientMode": "none",
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "card 0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "card 1"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d95926"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "GPUs: card 0 vs card 1",
+      "id": 9,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Card 0 busy (last hour)",
+      "description": "Share of the last hour card 0 (PCI 03:00.0) was reading more than 5 GB/s from memory, i.e. running prefill or decode.",
+      "id": 10,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 25
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg_over_time((max(xpu_memory_read_bytes_per_second{device=\"0\"}) > bool 5e9)[1h:10s])",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3987e5",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "idle"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Card 1 busy (last hour)",
+      "description": "Share of the last hour card 1 (PCI 08:00.0) was reading more than 5 GB/s from memory, i.e. running prefill or decode.",
+      "id": 11,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 25
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg_over_time((max(xpu_memory_read_bytes_per_second{device=\"1\"}) > bool 5e9)[1h:10s])",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#d95926",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "idle"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Card 0 power",
+      "description": "",
+      "id": 12,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 25
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(xpu_power_watts{device=\"0\"})",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3987e5",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "idle"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Card 1 power",
+      "description": "",
+      "id": 13,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 25
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max(xpu_power_watts{device=\"1\"})",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#d95926",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "idle"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "GPU activity: memory read bandwidth",
+      "description": "Best proxy for GPU load: decode is limited by memory bandwidth and prefill reads the weights too. Near zero means the card is idle.",
+      "id": 14,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 29
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (device) (xpu_memory_read_bytes_per_second)",
+          "legendFormat": "card {{device}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#3987e5"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": 30000,
+            "axisSoftMin": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "card 0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "card 1"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d95926"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Requests running per card",
+      "description": "Requests each model server is working on, by the card(s) it runs on (vLLM, and llama.cpp for Gemma and gpt-oss). 0+1 is Qwen with TP=2 or gpt-oss.",
+      "id": 15,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 29
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (card) (vllm:num_requests_running) or sum by (card) (llamacpp:requests_processing)",
+          "legendFormat": "card {{card}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#3987e5"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": 30000,
+            "axisSoftMin": 0,
+            "gradientMode": "none"
+          },
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "card 0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "card 1"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d95926"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "card 0+1"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#199e70"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Power per card",
+      "description": "",
+      "id": 16,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 37
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (device) (xpu_power_watts)",
+          "legendFormat": "card {{device}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#3987e5"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": 30000,
+            "axisSoftMin": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "card 0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "card 1"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d95926"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "VRAM used per card",
+      "description": "",
+      "id": 17,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 37
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (device) (xpu_memory_used_bytes)",
+          "legendFormat": "card {{device}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#3987e5"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": 30000,
+            "axisSoftMin": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "card 0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "card 1"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d95926"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Qwen (vLLM): overview, last 5 minutes",
+      "id": 18,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 45
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Decode speed",
+      "description": "Average per-request generation speed (tokens/s) over requests finished in the last 5 minutes.",
+      "id": 19,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 0,
+        "y": 46
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(vllm:request_time_per_output_token_seconds_count{job=\"vllm\"}[5m])) / sum(rate(vllm:request_time_per_output_token_seconds_sum{job=\"vllm\"}[5m]))",
           "instant": false,
           "range": true,
           "datasource": {
@@ -93,7 +1788,7 @@
       "type": "stat",
       "title": "First token (median)",
       "description": "Median time from request arrival to first streamed token. Dominated by prompt processing for long agent contexts.",
-      "id": 3,
+      "id": 20,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -102,12 +1797,12 @@
         "h": 4,
         "w": 4,
         "x": 4,
-        "y": 1
+        "y": 46
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "histogram_quantile(0.5, sum by (le) (rate(vllm:time_to_first_token_seconds_bucket[5m])))",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(vllm:time_to_first_token_seconds_bucket{job=\"vllm\"}[5m])))",
           "instant": false,
           "range": true,
           "datasource": {
@@ -154,7 +1849,7 @@
       "type": "stat",
       "title": "MTP tokens per step",
       "description": "Mean tokens produced per decoding step with MTP speculative decoding (1 = no speedup, 5 = max with 4 draft tokens).",
-      "id": 4,
+      "id": 21,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -163,12 +1858,12 @@
         "h": 4,
         "w": 4,
         "x": 8,
-        "y": 1
+        "y": 46
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "1 + sum(rate(vllm:spec_decode_num_accepted_tokens_total[5m])) / sum(rate(vllm:spec_decode_num_drafts_total[5m]))",
+          "expr": "1 + sum(rate(vllm:spec_decode_num_accepted_tokens_total{job=\"vllm\"}[5m])) / sum(rate(vllm:spec_decode_num_drafts_total{job=\"vllm\"}[5m]))",
           "instant": false,
           "range": true,
           "datasource": {
@@ -216,7 +1911,7 @@
       "type": "stat",
       "title": "Prefix cache hit rate",
       "description": "Share of prompt tokens served from the prefix cache instead of being recomputed.",
-      "id": 5,
+      "id": 22,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -225,12 +1920,12 @@
         "h": 4,
         "w": 4,
         "x": 12,
-        "y": 1
+        "y": 46
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(vllm:prefix_cache_hits_total[5m])) / sum(rate(vllm:prefix_cache_queries_total[5m]))",
+          "expr": "sum(rate(vllm:prefix_cache_hits_total{job=\"vllm\"}[5m])) / sum(rate(vllm:prefix_cache_queries_total{job=\"vllm\"}[5m]))",
           "instant": false,
           "range": true,
           "datasource": {
@@ -278,7 +1973,7 @@
       "type": "stat",
       "title": "KV cache usage",
       "description": "Share of the KV cache currently holding active requests.",
-      "id": 6,
+      "id": 23,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -287,12 +1982,12 @@
         "h": 4,
         "w": 4,
         "x": 16,
-        "y": 1
+        "y": 46
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "max(vllm:kv_cache_usage_perc)",
+          "expr": "max(vllm:kv_cache_usage_perc{job=\"vllm\"})",
           "instant": false,
           "range": true,
           "datasource": {
@@ -347,8 +2042,8 @@
     {
       "type": "stat",
       "title": "Requests running",
-      "description": "Requests currently being processed (max 4).",
-      "id": 7,
+      "description": "Requests vLLM is processing, across all Qwen instances (4 per card, 8 with TP=2).",
+      "id": 24,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -357,12 +2052,12 @@
         "h": 4,
         "w": 4,
         "x": 20,
-        "y": 1
+        "y": 46
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(vllm:num_requests_running)",
+          "expr": "sum(vllm:num_requests_running{job=\"vllm\"})",
           "instant": false,
           "range": true,
           "datasource": {
@@ -408,14 +2103,14 @@
     },
     {
       "type": "row",
-      "title": "Throughput",
-      "id": 8,
+      "title": "Qwen (vLLM): throughput",
+      "id": 25,
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 50
       },
       "panels": []
     },
@@ -423,7 +2118,7 @@
       "type": "timeseries",
       "title": "Token throughput (all requests)",
       "description": "Tokens per second across all requests. Prompt tokens split into freshly computed vs reused from the prefix cache.",
-      "id": 9,
+      "id": 26,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -432,12 +2127,12 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 6
+        "y": 51
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(vllm:generation_tokens_total[$__rate_interval]))",
+          "expr": "sum(rate(vllm:generation_tokens_total{job=\"vllm\"}[$__rate_interval]))",
           "legendFormat": "generated",
           "datasource": {
             "type": "prometheus",
@@ -446,7 +2141,7 @@
         },
         {
           "refId": "B",
-          "expr": "sum(rate(vllm:prompt_tokens_total[$__rate_interval])) - sum(rate(vllm:prompt_tokens_cached_total[$__rate_interval]))",
+          "expr": "sum(rate(vllm:prompt_tokens_total{job=\"vllm\"}[$__rate_interval])) - sum(rate(vllm:prompt_tokens_cached_total{job=\"vllm\"}[$__rate_interval]))",
           "legendFormat": "prompt (computed)",
           "datasource": {
             "type": "prometheus",
@@ -455,7 +2150,7 @@
         },
         {
           "refId": "C",
-          "expr": "sum(rate(vllm:prompt_tokens_cached_total[$__rate_interval]))",
+          "expr": "sum(rate(vllm:prompt_tokens_cached_total{job=\"vllm\"}[$__rate_interval]))",
           "legendFormat": "prompt (from cache)",
           "datasource": {
             "type": "prometheus",
@@ -544,7 +2239,7 @@
       "type": "timeseries",
       "title": "Per-request decode speed",
       "description": "Average generation speed of individual requests finishing in each interval (1 / time per output token).",
-      "id": 10,
+      "id": 27,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -553,12 +2248,12 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 6
+        "y": 51
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(vllm:request_time_per_output_token_seconds_count[$__rate_interval])) / sum(rate(vllm:request_time_per_output_token_seconds_sum[$__rate_interval]))",
+          "expr": "sum(rate(vllm:request_time_per_output_token_seconds_count{job=\"vllm\"}[$__rate_interval])) / sum(rate(vllm:request_time_per_output_token_seconds_sum{job=\"vllm\"}[$__rate_interval]))",
           "legendFormat": "decode speed",
           "datasource": {
             "type": "prometheus",
@@ -599,14 +2294,14 @@
     },
     {
       "type": "row",
-      "title": "Latency",
-      "id": 11,
+      "title": "Qwen (vLLM): latency",
+      "id": 28,
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 59
       },
       "panels": []
     },
@@ -614,7 +2309,7 @@
       "type": "timeseries",
       "title": "Time to first token",
       "description": "",
-      "id": 12,
+      "id": 29,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -623,12 +2318,12 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 15
+        "y": 60
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "histogram_quantile(0.5, sum by (le) (rate(vllm:time_to_first_token_seconds_bucket[$__rate_interval])))",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(vllm:time_to_first_token_seconds_bucket{job=\"vllm\"}[$__rate_interval])))",
           "legendFormat": "p50",
           "datasource": {
             "type": "prometheus",
@@ -637,7 +2332,7 @@
         },
         {
           "refId": "B",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(vllm:time_to_first_token_seconds_bucket[$__rate_interval])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(vllm:time_to_first_token_seconds_bucket{job=\"vllm\"}[$__rate_interval])))",
           "legendFormat": "p95",
           "datasource": {
             "type": "prometheus",
@@ -711,7 +2406,7 @@
       "type": "timeseries",
       "title": "Request duration",
       "description": "End-to-end request time, including thinking and the full answer.",
-      "id": 13,
+      "id": 30,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -720,12 +2415,12 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 15
+        "y": 60
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "histogram_quantile(0.5, sum by (le) (rate(vllm:e2e_request_latency_seconds_bucket[$__rate_interval])))",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(vllm:e2e_request_latency_seconds_bucket{job=\"vllm\"}[$__rate_interval])))",
           "legendFormat": "p50",
           "datasource": {
             "type": "prometheus",
@@ -734,7 +2429,7 @@
         },
         {
           "refId": "B",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(vllm:e2e_request_latency_seconds_bucket[$__rate_interval])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(vllm:e2e_request_latency_seconds_bucket{job=\"vllm\"}[$__rate_interval])))",
           "legendFormat": "p95",
           "datasource": {
             "type": "prometheus",
@@ -809,7 +2504,7 @@
       "type": "timeseries",
       "title": "Prefill vs decode time per request (median)",
       "description": "Where request time goes: processing the prompt vs generating the answer.",
-      "id": 14,
+      "id": 31,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -818,12 +2513,12 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 23
+        "y": 68
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "histogram_quantile(0.5, sum by (le) (rate(vllm:request_prefill_time_seconds_bucket[$__rate_interval])))",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(vllm:request_prefill_time_seconds_bucket{job=\"vllm\"}[$__rate_interval])))",
           "legendFormat": "prefill",
           "datasource": {
             "type": "prometheus",
@@ -832,7 +2527,7 @@
         },
         {
           "refId": "B",
-          "expr": "histogram_quantile(0.5, sum by (le) (rate(vllm:request_decode_time_seconds_bucket[$__rate_interval])))",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(vllm:request_decode_time_seconds_bucket{job=\"vllm\"}[$__rate_interval])))",
           "legendFormat": "decode",
           "datasource": {
             "type": "prometheus",
@@ -906,7 +2601,7 @@
       "type": "timeseries",
       "title": "Prompt size per request",
       "description": "Prompt length in tokens. Coding agents typically send 15-40k tokens.",
-      "id": 15,
+      "id": 32,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -915,12 +2610,12 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 23
+        "y": 68
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "histogram_quantile(0.5, sum by (le) (rate(vllm:request_prompt_tokens_bucket[$__rate_interval])))",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(vllm:request_prompt_tokens_bucket{job=\"vllm\"}[$__rate_interval])))",
           "legendFormat": "p50",
           "datasource": {
             "type": "prometheus",
@@ -929,7 +2624,7 @@
         },
         {
           "refId": "B",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(vllm:request_prompt_tokens_bucket[$__rate_interval])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(vllm:request_prompt_tokens_bucket{job=\"vllm\"}[$__rate_interval])))",
           "legendFormat": "p95",
           "datasource": {
             "type": "prometheus",
@@ -1002,14 +2697,14 @@
     },
     {
       "type": "row",
-      "title": "Speculative decoding (MTP) and caching",
-      "id": 16,
+      "title": "Qwen (vLLM): speculative decoding (MTP) and caching",
+      "id": 33,
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 31
+        "y": 76
       },
       "panels": []
     },
@@ -1017,7 +2712,7 @@
       "type": "timeseries",
       "title": "MTP acceptance by draft position",
       "description": "How often each drafted token is accepted. Code is typically 80-95%; prose falls off quickly by draft 3-4.",
-      "id": 17,
+      "id": 34,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -1026,12 +2721,12 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 32
+        "y": 77
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(vllm:spec_decode_num_accepted_tokens_per_pos_total{position=\"0\"}[$__rate_interval])) / sum(rate(vllm:spec_decode_num_drafts_total[$__rate_interval]))",
+          "expr": "sum(rate(vllm:spec_decode_num_accepted_tokens_per_pos_total{job=\"vllm\",position=\"0\"}[$__rate_interval])) / sum(rate(vllm:spec_decode_num_drafts_total{job=\"vllm\"}[$__rate_interval]))",
           "legendFormat": "draft 1",
           "datasource": {
             "type": "prometheus",
@@ -1040,7 +2735,7 @@
         },
         {
           "refId": "B",
-          "expr": "sum(rate(vllm:spec_decode_num_accepted_tokens_per_pos_total{position=\"1\"}[$__rate_interval])) / sum(rate(vllm:spec_decode_num_drafts_total[$__rate_interval]))",
+          "expr": "sum(rate(vllm:spec_decode_num_accepted_tokens_per_pos_total{job=\"vllm\",position=\"1\"}[$__rate_interval])) / sum(rate(vllm:spec_decode_num_drafts_total{job=\"vllm\"}[$__rate_interval]))",
           "legendFormat": "draft 2",
           "datasource": {
             "type": "prometheus",
@@ -1049,7 +2744,7 @@
         },
         {
           "refId": "C",
-          "expr": "sum(rate(vllm:spec_decode_num_accepted_tokens_per_pos_total{position=\"2\"}[$__rate_interval])) / sum(rate(vllm:spec_decode_num_drafts_total[$__rate_interval]))",
+          "expr": "sum(rate(vllm:spec_decode_num_accepted_tokens_per_pos_total{job=\"vllm\",position=\"2\"}[$__rate_interval])) / sum(rate(vllm:spec_decode_num_drafts_total{job=\"vllm\"}[$__rate_interval]))",
           "legendFormat": "draft 3",
           "datasource": {
             "type": "prometheus",
@@ -1058,7 +2753,7 @@
         },
         {
           "refId": "D",
-          "expr": "sum(rate(vllm:spec_decode_num_accepted_tokens_per_pos_total{position=\"3\"}[$__rate_interval])) / sum(rate(vllm:spec_decode_num_drafts_total[$__rate_interval]))",
+          "expr": "sum(rate(vllm:spec_decode_num_accepted_tokens_per_pos_total{job=\"vllm\",position=\"3\"}[$__rate_interval])) / sum(rate(vllm:spec_decode_num_drafts_total{job=\"vllm\"}[$__rate_interval]))",
           "legendFormat": "draft 4",
           "datasource": {
             "type": "prometheus",
@@ -1164,7 +2859,7 @@
       "type": "timeseries",
       "title": "Cache",
       "description": "",
-      "id": 18,
+      "id": 35,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -1173,12 +2868,12 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 32
+        "y": 77
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(vllm:prefix_cache_hits_total[$__rate_interval])) / sum(rate(vllm:prefix_cache_queries_total[$__rate_interval]))",
+          "expr": "sum(rate(vllm:prefix_cache_hits_total{job=\"vllm\"}[$__rate_interval])) / sum(rate(vllm:prefix_cache_queries_total{job=\"vllm\"}[$__rate_interval]))",
           "legendFormat": "prefix cache hit rate",
           "datasource": {
             "type": "prometheus",
@@ -1187,7 +2882,7 @@
         },
         {
           "refId": "B",
-          "expr": "max(vllm:kv_cache_usage_perc)",
+          "expr": "max(vllm:kv_cache_usage_perc{job=\"vllm\"})",
           "legendFormat": "KV cache usage",
           "datasource": {
             "type": "prometheus",
@@ -1261,36 +2956,36 @@
     },
     {
       "type": "row",
-      "title": "GPU: Intel Arc Pro B70",
-      "id": 19,
+      "title": "Gemma (llama.cpp, review layout)",
+      "id": 36,
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 40
+        "y": 85
       },
       "panels": []
     },
     {
       "type": "stat",
-      "title": "Power",
-      "description": "",
-      "id": 20,
+      "title": "Decode speed",
+      "description": "Average generation speed while Gemma was generating, over the last 5 minutes.",
+      "id": 37,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
+        "w": 6,
         "x": 0,
-        "y": 41
+        "y": 86
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "max(xpu_power_watts)",
+          "expr": "sum(rate(llamacpp:tokens_predicted_total{job=\"gemma\"}[5m])) / sum(rate(llamacpp:tokens_predicted_seconds_total{job=\"gemma\"}[5m]))",
           "instant": false,
           "range": true,
           "datasource": {
@@ -1301,263 +2996,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "watt",
-          "decimals": 0,
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "#3987e5",
-                "value": null
-              }
-            ]
-          },
-          "noValue": "idle"
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "colorMode": "value",
-        "graphMode": "area",
-        "textMode": "value",
-        "justifyMode": "center",
-        "orientation": "auto"
-      }
-    },
-    {
-      "type": "stat",
-      "title": "Temperature",
-      "description": "",
-      "id": 21,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 4,
-        "y": 41
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "max(xpu_temperature_celsius)",
-          "instant": false,
-          "range": true,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          }
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "celsius",
-          "decimals": 0,
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "#0ca30c",
-                "value": null
-              },
-              {
-                "color": "#fab219",
-                "value": 80
-              },
-              {
-                "color": "#d03b3b",
-                "value": 90
-              }
-            ]
-          },
-          "noValue": "idle"
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "colorMode": "value",
-        "graphMode": "area",
-        "textMode": "value",
-        "justifyMode": "center",
-        "orientation": "auto"
-      }
-    },
-    {
-      "type": "stat",
-      "title": "Core clock",
-      "description": "",
-      "id": 22,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 8,
-        "y": 41
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "max(xpu_frequency_mhz)",
-          "instant": false,
-          "range": true,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          }
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "suffix: MHz",
-          "decimals": 0,
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "#3987e5",
-                "value": null
-              }
-            ]
-          },
-          "noValue": "idle"
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "colorMode": "value",
-        "graphMode": "area",
-        "textMode": "value",
-        "justifyMode": "center",
-        "orientation": "auto"
-      }
-    },
-    {
-      "type": "stat",
-      "title": "Memory bandwidth",
-      "description": "Best proxy for GPU load: token generation is limited by memory bandwidth. The xe driver doesn't report a utilization %.",
-      "id": 23,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 12,
-        "y": 41
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "max(xpu_memory_read_bytes_per_second)",
-          "instant": false,
-          "range": true,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          }
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "Bps",
-          "decimals": 0,
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "#3987e5",
-                "value": null
-              }
-            ]
-          },
-          "noValue": "idle"
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "colorMode": "value",
-        "graphMode": "area",
-        "textMode": "value",
-        "justifyMode": "center",
-        "orientation": "auto"
-      }
-    },
-    {
-      "type": "stat",
-      "title": "VRAM used",
-      "description": "",
-      "id": 24,
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 16,
-        "y": 41
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "max(xpu_memory_used_bytes)",
-          "instant": false,
-          "range": true,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          }
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "bytes",
+          "unit": "suffix: tok/s",
           "decimals": 1,
           "color": {
             "mode": "thresholds"
@@ -1592,23 +3031,147 @@
     },
     {
       "type": "stat",
-      "title": "Requests completed (24h)",
-      "description": "",
-      "id": 25,
+      "title": "Prompt speed",
+      "description": "Prompt tokens processed per second of prompt processing, over the last 5 minutes.",
+      "id": 38,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 20,
-        "y": 41
+        "w": 6,
+        "x": 6,
+        "y": 86
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "round(sum(increase(vllm:request_success_total[24h])))",
+          "expr": "sum(rate(llamacpp:prompt_tokens_total{job=\"gemma\"}[5m])) / sum(rate(llamacpp:prompt_seconds_total{job=\"gemma\"}[5m]))",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: tok/s",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3987e5",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "idle"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "MTP tokens per step",
+      "description": "Mean tokens produced per decoding step with Gemma's MTP draft head (1 = no speedup, 4 = max with 3 drafts).",
+      "id": 39,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 86
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "1 + sum(rate(llamacpp:spec_decode_num_accepted_tokens_total{job=\"gemma\"}[5m])) / sum(rate(llamacpp:spec_decode_num_drafts_total{job=\"gemma\"}[5m]))",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 2,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3987e5",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "idle"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Requests running",
+      "description": "Requests Gemma is processing (2 slots).",
+      "id": 40,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 86
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(llamacpp:requests_processing{job=\"gemma\"})",
           "instant": false,
           "range": true,
           "datasource": {
@@ -1654,24 +3217,24 @@
     },
     {
       "type": "timeseries",
-      "title": "Memory bandwidth",
-      "description": "",
-      "id": 26,
+      "title": "Gemma token throughput",
+      "description": "Tokens per second Gemma generated and read. Empty outside the review layout.",
+      "id": 41,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
+        "w": 12,
         "x": 0,
-        "y": 45
+        "y": 90
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "max(xpu_memory_read_bytes_per_second)",
-          "legendFormat": "read",
+          "expr": "sum(rate(llamacpp:tokens_predicted_total{job=\"gemma\"}[$__rate_interval]))",
+          "legendFormat": "generated",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -1679,8 +3242,8 @@
         },
         {
           "refId": "B",
-          "expr": "max(xpu_memory_write_bytes_per_second)",
-          "legendFormat": "write",
+          "expr": "sum(rate(llamacpp:prompt_tokens_total{job=\"gemma\"}[$__rate_interval]))",
+          "legendFormat": "prompt",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -1689,7 +3252,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "Bps",
+          "unit": "suffix: tok/s",
           "min": 0,
           "color": {
             "mode": "fixed",
@@ -1708,7 +3271,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "read"
+              "options": "generated"
             },
             "properties": [
               {
@@ -1723,7 +3286,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "write"
+              "options": "prompt"
             },
             "properties": [
               {
@@ -1751,24 +3314,42 @@
     },
     {
       "type": "timeseries",
-      "title": "Power",
-      "description": "",
-      "id": 27,
+      "title": "Gemma MTP acceptance by draft position",
+      "description": "How often each token Gemma's MTP head drafts is accepted (3 drafts per step).",
+      "id": 42,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
         "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 45
+        "w": 12,
+        "x": 12,
+        "y": 90
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "max(xpu_power_watts)",
-          "legendFormat": "power",
+          "expr": "sum(rate(llamacpp:spec_decode_num_accepted_tokens_per_pos_total{position=\"0\"}[$__rate_interval])) / sum(rate(llamacpp:spec_decode_num_drafts_total{job=\"gemma\"}[$__rate_interval]))",
+          "legendFormat": "draft 1",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate(llamacpp:spec_decode_num_accepted_tokens_per_pos_total{position=\"1\"}[$__rate_interval])) / sum(rate(llamacpp:spec_decode_num_drafts_total{job=\"gemma\"}[$__rate_interval]))",
+          "legendFormat": "draft 2",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "C",
+          "expr": "sum(rate(llamacpp:spec_decode_num_accepted_tokens_per_pos_total{position=\"2\"}[$__rate_interval])) / sum(rate(llamacpp:spec_decode_num_drafts_total{job=\"gemma\"}[$__rate_interval]))",
+          "legendFormat": "draft 3",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -1777,7 +3358,134 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "watt",
+          "unit": "percentunit",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#3987e5"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": 30000,
+            "axisSoftMin": 0,
+            "gradientMode": "none"
+          },
+          "max": 1,
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "draft 1"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "draft 2"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d95926"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "draft 3"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#199e70"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "row",
+      "title": "GPU detail",
+      "id": 43,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 98
+      },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory bandwidth (read, write)",
+      "description": "",
+      "id": 44,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 99
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (device) (xpu_memory_read_bytes_per_second)",
+          "legendFormat": "read card {{device}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "max by (device) (xpu_memory_write_bytes_per_second)",
+          "legendFormat": "write card {{device}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
           "min": 0,
           "color": {
             "mode": "fixed",
@@ -1792,11 +3500,160 @@
             "gradientMode": "none"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "read card 0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "read card 1"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d95926"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "write card 0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#199e70"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "write card 1"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#c98500"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
-          "showLegend": false,
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Core clock",
+      "description": "",
+      "id": 45,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 99
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by (device) (xpu_frequency_mhz)",
+          "legendFormat": "card {{device}}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: MHz",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#3987e5"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": 30000,
+            "axisSoftMin": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "card 0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "card 1"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d95926"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
           "displayMode": "list",
           "placement": "bottom"
         },
@@ -1810,7 +3667,7 @@
       "type": "timeseries",
       "title": "Temperature",
       "description": "",
-      "id": 28,
+      "id": 46,
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
@@ -1819,13 +3676,13 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 45
+        "y": 99
       },
       "targets": [
         {
           "refId": "A",
-          "expr": "max(xpu_temperature_celsius)",
-          "legendFormat": "core",
+          "expr": "max by (device) (xpu_temperature_celsius)",
+          "legendFormat": "card {{device}}",
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
@@ -1849,11 +3706,42 @@
             "gradientMode": "none"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "card 0"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "card 1"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d95926"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
-          "showLegend": false,
+          "showLegend": true,
           "displayMode": "list",
           "placement": "bottom"
         },
@@ -1861,6 +3749,68 @@
           "mode": "multi",
           "sort": "none"
         }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Requests completed (24h)",
+      "description": "Qwen requests that finished in the last 24 hours, across all vLLM instances.",
+      "id": 47,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 107
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "round(sum(increase(vllm:request_success_total{job=\"vllm\"}[24h])))",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3987e5",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "idle"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
       }
     }
   ],

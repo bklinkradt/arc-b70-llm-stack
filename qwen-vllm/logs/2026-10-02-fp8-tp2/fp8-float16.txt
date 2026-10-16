@@ -1,0 +1,13 @@
+== FP8 TP=2 dtype=float16  2026-10-02 00:58:59
+-- bench 3 code 1 (temp 0)
+avg decode: 60.7 tok/s
+-- bench 3 prose 1 (temp 0)
+avg decode: 45.5 tok/s
+-- bench 2 code 4 (temp 0)
+avg decode: 57.8 tok/s
+-- bench 2 prose 4 (temp 0)
+avg decode: 42.3 tok/s
+-- prefill
+prompt   4223 tok  time   2.56s  prefill    1649 tok/s
+prompt  16789 tok  time  10.42s  prefill    1612 tok/s
+prompt  62939 tok  time  43.59s  prefill    1444 tok/s

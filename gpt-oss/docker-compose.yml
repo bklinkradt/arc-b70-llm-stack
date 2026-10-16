@@ -1,0 +1,66 @@
+# gpt-oss-120b (OpenAI, 117B MoE, 5.1B active) on llama.cpp SYCL across both B70s. Only
+# the `big` GPU layout runs it (`make mode M=big`). Measured in ../llamacpp-bench
+# (README.md, 2026-10-16): 95 tok/s decode, ~60 at 36k tokens, 224 tok/s aggregate at 8
+# requests. The 59 GiB MXFP4 GGUF fits the two cards with nothing on the CPU.
+name: gpt-oss
+
+services:
+  gpt-oss:
+    # llama.cpp b11669 (commit 620d2225c), oneAPI 2026.1. Older builds decode gpt-oss at
+    # ~37 tok/s (no MXFP4 MoE kernels) and corrupt long prompts with --split-mode tensor.
+    image: ghcr.io/ggml-org/llama.cpp:full-intel@sha256:9ddf4bfc321a20226f831891fc9b40610f11a9a50e5171b876b1e608493babee
+    # Fixed name: llama-swap's gpu-layout (../gateway) starts and stops it by name.
+    container_name: gpt-oss
+    # llama-swap owns the lifecycle, so `docker compose up` must not start it and
+    # auto-restart must not bring it back next to whatever took its cards.
+    profiles: [managed]
+    restart: "no"
+    # Level Zero lists only the Intel cards, in PCI order; both of them.
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "${VIDEO_GID:-39}"   # video; `getent group video render` on your host
+      - "${RENDER_GID:-105}" # render
+    environment:
+      ZE_AFFINITY_MASK: "0,1"
+      ONEAPI_DEVICE_SELECTOR: level_zero:*
+    volumes:
+      - ${MODELS_DIR:-${HOME}/models}:/models:ro
+    # Localhost only: remote access goes through the gateway, which adds API keys.
+    ports:
+      - "127.0.0.1:8004:8000"
+    networks:
+      - default
+      - llm-net
+    entrypoint: ["/app/llama-server"]
+    # Flag and value as separate items: llama.cpp rewrites "_" to "-" in "--flag=value".
+    command: [
+      "--model", "/models/${GPT_OSS_MODEL:-gpt-oss-120b-GGUF/gpt-oss-120b-MXFP4.gguf}",
+      "--alias", "gpt-oss-120b",
+      "--host", "0.0.0.0",
+      "--port", "8000",
+      "--n-gpu-layers", "999",
+      # layer, not tensor: faster decode at load here (224 vs 198 tok/s at 8 requests),
+      # and tensor has hung under concurrent requests on older builds.
+      "--split-mode", "layer",
+      # 64k: 128k with 4 slots ran out of VRAM at warm-up (UR_RESULT_ERROR_OUT_OF_RESOURCES).
+      "--ctx-size", "65536",
+      "--flash-attn", "on",
+      "--cache-type-k", "q8_0",
+      "--cache-type-v", "q8_0",
+      # Four slots sharing one KV pool.
+      "--parallel", "4",
+      "--kv-unified",
+      "--jinja",
+      "--metrics",
+    ]
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 900s
+
+networks:
+  llm-net:
+    external: true

@@ -1,0 +1,45 @@
+{
+  "Name": "/qwen-image",
+  "State": {
+    "Status": "exited",
+    "Running": false,
+    "Paused": false,
+    "Restarting": false,
+    "OOMKilled": false,
+    "Dead": false,
+    "ExitCode": 0
+  },
+  "Path": "python",
+  "Args": [
+    "app.py"
+  ],
+  "Config": {
+    "Image": "qwen-image-xpu:latest",
+    "Entrypoint": null,
+    "Cmd": [
+      "python",
+      "app.py"
+    ],
+    "Env": [
+      "ZE_AFFINITY_MASK=0",
+      "HF_TOKEN=",
+      "QWEN_OFFLOAD=auto",
+      "QWEN_MODEL=Qwen/Qwen-Image-2.1",
+      "QWEN_VAE_TILE=1024"
+    ]
+  },
+  "HostConfig": {
+    "Devices": [
+      {
+        "PathOnHost": "/dev/dri/by-path/pci-0000:08:00.0-render",
+        "PathInContainer": "/dev/dri/renderD128",
+        "CgroupPermissions": "rwm"
+      },
+      {
+        "PathOnHost": "/dev/dri/by-path/pci-0000:08:00.0-card",
+        "PathInContainer": "/dev/dri/card0",
+        "CgroupPermissions": "rwm"
+      }
+    ]
+  }
+}

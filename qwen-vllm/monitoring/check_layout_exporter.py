@@ -172,7 +172,7 @@ def main():
             ("gpt-oss on both cards", cards(s, "0") == cards(s, "1") == ["gpt-oss"]),
             ("gpt-oss config", {k: running_of(s, "gpt-oss")[0][k] for k in
                                 ("cards", "engine", "model", "ctx", "parallel", "quant", "kv", "spec")}
-             == {"cards": "0+1", "engine": "llama.cpp", "model": "gpt-oss-120b", "ctx": "65536",
+             == {"cards": "0+1", "engine": "llama.cpp", "model": "gpt-oss-120b", "ctx": "131072",
                  "parallel": "4", "quant": "MXFP4", "kv": "q8_0", "spec": ""}),
         ])
         state("big with an image loaded", "big", {"qwen-vllm", "qwen-image"}, checks=lambda s: [

@@ -13,6 +13,7 @@
     "vllm",
     "qwen",
     "gemma",
+    "gpt-oss",
     "layout"
   ],
   "panels": [
@@ -606,7 +607,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(sum(rate(vllm:prompt_tokens_total[5m])) or vector(0)) + (sum(rate(llamacpp:prompt_tokens_total[5m])) or vector(0))",
+          "expr": "(sum(rate(vllm:prompt_tokens_total[5m])) or vector(0)) + (sum(rate(llamacpp:prompt_tokens_total[5m])) or vector(0)) + (sum(rate(llamacpp:prompt_tokens_cached_total[5m])) or vector(0))",
           "instant": false,
           "range": true,
           "datasource": {
@@ -652,8 +653,8 @@
     },
     {
       "type": "stat",
-      "title": "Total power",
-      "description": "Both B70s together.",
+      "title": "Total power (5 min)",
+      "description": "Both B70s together. Averaged over 5 minutes: with PCIe ASPM on, idle readings jump between ~0 and ~35 W, so idle figures are rough; use a wall meter for those. Readings under load are reliable.",
       "id": 4,
       "datasource": {
         "type": "prometheus",
@@ -668,7 +669,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(max by (device) (xpu_power_watts))",
+          "expr": "sum(max by (device) (avg_over_time(xpu_power_watts[5m])))",
           "instant": false,
           "range": true,
           "datasource": {
@@ -899,7 +900,7 @@
     {
       "type": "timeseries",
       "title": "Power, both cards (stacked)",
-      "description": "Each card's power, stacked: the top edge is the total draw of both B70s.",
+      "description": "Each card's power, stacked: the top edge is the total draw of both B70s. Averaged over 1 minute: with PCIe ASPM on, idle readings jump between ~0 and ~35 W, so idle figures are rough; use a wall meter for those. Readings under load are reliable.",
       "id": 7,
       "datasource": {
         "type": "prometheus",
@@ -914,7 +915,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "max by (device) (xpu_power_watts)",
+          "expr": "max by (device) (avg_over_time(xpu_power_watts[1m]))",
           "legendFormat": "card {{device}}",
           "datasource": {
             "type": "prometheus",
@@ -1219,8 +1220,8 @@
     },
     {
       "type": "stat",
-      "title": "Card 0 power",
-      "description": "",
+      "title": "Card 0 power (5 min)",
+      "description": "Averaged over 5 minutes: with PCIe ASPM on, idle readings jump between ~0 and ~35 W, so idle figures are rough; use a wall meter for those. Readings under load are reliable.",
       "id": 12,
       "datasource": {
         "type": "prometheus",
@@ -1235,7 +1236,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "max(xpu_power_watts{device=\"0\"})",
+          "expr": "max by (device) (avg_over_time(xpu_power_watts{device=\"0\"}[5m]))",
           "instant": false,
           "range": true,
           "datasource": {
@@ -1281,8 +1282,8 @@
     },
     {
       "type": "stat",
-      "title": "Card 1 power",
-      "description": "",
+      "title": "Card 1 power (5 min)",
+      "description": "Averaged over 5 minutes: with PCIe ASPM on, idle readings jump between ~0 and ~35 W, so idle figures are rough; use a wall meter for those. Readings under load are reliable.",
       "id": 13,
       "datasource": {
         "type": "prometheus",
@@ -1297,7 +1298,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "max(xpu_power_watts{device=\"1\"})",
+          "expr": "max by (device) (avg_over_time(xpu_power_watts{device=\"1\"}[5m]))",
           "instant": false,
           "range": true,
           "datasource": {
@@ -1536,7 +1537,7 @@
     {
       "type": "timeseries",
       "title": "Power per card",
-      "description": "",
+      "description": "Averaged over 1 minute: with PCIe ASPM on, idle readings jump between ~0 and ~35 W, so idle figures are rough; use a wall meter for those. Readings under load are reliable.",
       "id": 16,
       "datasource": {
         "type": "prometheus",
@@ -1551,7 +1552,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "max by (device) (xpu_power_watts)",
+          "expr": "max by (device) (avg_over_time(xpu_power_watts[1m]))",
           "legendFormat": "card {{device}}",
           "datasource": {
             "type": "prometheus",
@@ -3444,7 +3445,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 98
+        "y": 111
       },
       "panels": []
     },
@@ -3461,7 +3462,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 99
+        "y": 112
       },
       "targets": [
         {
@@ -3588,7 +3589,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 99
+        "y": 112
       },
       "targets": [
         {
@@ -3676,7 +3677,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 99
+        "y": 112
       },
       "targets": [
         {
@@ -3753,8 +3754,8 @@
     },
     {
       "type": "stat",
-      "title": "Requests completed (24h)",
-      "description": "Qwen requests that finished in the last 24 hours, across all vLLM instances.",
+      "title": "Qwen requests completed (24h)",
+      "description": "Qwen requests that finished in the last 24 hours, across all vLLM instances. llama.cpp (Gemma, gpt-oss) has no completed-requests counter; see the tokens panel next to this one.",
       "id": 47,
       "datasource": {
         "type": "prometheus",
@@ -3764,7 +3765,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 107
+        "y": 120
       },
       "targets": [
         {
@@ -3811,6 +3812,552 @@
         "textMode": "value",
         "justifyMode": "center",
         "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Tokens generated (24h), all models",
+      "description": "Tokens generated in the last 24 hours by every model: Qwen, Gemma and gpt-oss.",
+      "id": 48,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 120
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum(increase(vllm:generation_tokens_total[24h])) or vector(0)) + (sum(increase(llamacpp:tokens_predicted_total[24h])) or vector(0))",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3987e5",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "idle"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "row",
+      "title": "gpt-oss-120b (llama.cpp, big layout, both cards)",
+      "id": 49,
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 98
+      },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "Decode speed",
+      "description": "Average generation speed while gpt-oss was generating, over the last 5 minutes. Empty outside the big layout.",
+      "id": 50,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 99
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(llamacpp:tokens_predicted_total{job=\"gpt-oss\"}[5m])) / sum(rate(llamacpp:tokens_predicted_seconds_total{job=\"gpt-oss\"}[5m]))",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: tok/s",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3987e5",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "idle"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Prompt speed",
+      "description": "Prompt tokens processed per second of prompt processing, over the last 5 minutes.",
+      "id": 51,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 99
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(llamacpp:prompt_tokens_total{job=\"gpt-oss\"}[5m])) / sum(rate(llamacpp:prompt_seconds_total{job=\"gpt-oss\"}[5m]))",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: tok/s",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3987e5",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "idle"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Requests running",
+      "description": "Requests gpt-oss is processing (4 slots).",
+      "id": 52,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 99
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(llamacpp:requests_processing{job=\"gpt-oss\"})",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#3987e5",
+                "value": null
+              }
+            ]
+          },
+          "noValue": "idle"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Requests waiting",
+      "description": "Requests queued for a free slot. More than 4 at once wait here.",
+      "id": 53,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 99
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(llamacpp:requests_deferred{job=\"gpt-oss\"})",
+          "instant": false,
+          "range": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#0ca30c",
+                "value": null
+              },
+              {
+                "color": "#fab219",
+                "value": 1
+              }
+            ]
+          },
+          "noValue": "idle"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "area",
+        "textMode": "value",
+        "justifyMode": "center",
+        "orientation": "auto"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "gpt-oss token throughput",
+      "description": "Tokens per second gpt-oss generated and read, prompt split into computed vs reused from the slot cache. Empty outside the big layout.",
+      "id": 54,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 103
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(llamacpp:tokens_predicted_total{job=\"gpt-oss\"}[$__rate_interval]))",
+          "legendFormat": "generated",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "sum(rate(llamacpp:prompt_tokens_total{job=\"gpt-oss\"}[$__rate_interval]))",
+          "legendFormat": "prompt (computed)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "C",
+          "expr": "sum(rate(llamacpp:prompt_tokens_cached_total{job=\"gpt-oss\"}[$__rate_interval]))",
+          "legendFormat": "prompt (from cache)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: tok/s",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#3987e5"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": 30000,
+            "axisSoftMin": 0,
+            "gradientMode": "none"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "generated"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "prompt (computed)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d95926"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "prompt (from cache)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#199e70"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "gpt-oss requests",
+      "description": "Requests in its 4 slots and requests queued for one.",
+      "id": 55,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 103
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(llamacpp:requests_processing{job=\"gpt-oss\"})",
+          "legendFormat": "running",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        },
+        {
+          "refId": "B",
+          "expr": "sum(llamacpp:requests_deferred{job=\"gpt-oss\"})",
+          "legendFormat": "waiting",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "min": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#3987e5"
+          },
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "never",
+            "spanNulls": 30000,
+            "axisSoftMin": 0,
+            "gradientMode": "none"
+          },
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "running"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#3987e5"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "waiting"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#d95926"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        }
       }
     }
   ],

@@ -43,12 +43,12 @@ model_list:
       model: openai/gpt-oss-120b
       api_base: http://gpt-oss:8000/v1
       api_key: none  # llama.cpp runs without a key behind the gateway
-      # Only the big layout runs it. ~60 tok/s decode at 36k tokens, ~480 tok/s prefill.
+      # Only the big layout runs it. A ~120k-token prompt takes ~9 min to prefill (220 tok/s).
       timeout: 1800
       stream_timeout: 1800
     model_info:
       mode: chat
-      max_input_tokens: 65536
+      max_input_tokens: 131072
       supports_function_calling: true
       supports_reasoning: true
 

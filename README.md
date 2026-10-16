@@ -6,7 +6,8 @@ per-user keys.
 
 Getting this to work well on Intel's XPU stack took a lot of debugging: a PCIe setting
 stored on the card, a tensor-parallel hang fixed by a newer compute runtime, MTP output
-corruption fixed by a newer image, and more. **[B70-NOTES.md](B70-NOTES.md) lists every
+corruption fixed by a newer image, ~46 W idle per card until PCIe ASPM was enabled in
+the BIOS, and more. **[B70-NOTES.md](B70-NOTES.md) lists every
 pitfall with its fix**, which may be the most useful part if you run Arc GPUs yourself.
 
 **Tested on:** 2× Arc Pro B70 (32 GB) on PCIe Gen5 x8, Fedora 44, kernel 7.2.7 (`xe`),

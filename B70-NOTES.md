@@ -24,6 +24,27 @@ because this stack moves fast: re-check anything older than a few months.
 - **Does Gen4 vs Gen5 matter?** Not for single-card decode (~49 tok/s either way). It
   does for TP=2: the all-reduce runs at ~28 GB/s, the Gen5 x8 copy limit.
 
+### Each card draws ~46 W at idle (fixed 2026-10-16)
+- **Symptom:** ~46 W per card with nothing running, model loaded or not, with the GPU
+  cores in C6. The card's own counters split it as ~26 W GPU package and ~20 W for the
+  rest (VRAM, power circuitry, fan, on-card switch).
+- **Cause:** PCIe ASPM was disabled in the BIOS, so the CPU root ports reported "ASPM not
+  supported" (`sudo lspci -vv -s 00:01.1`). Linux could only enable L1 on the virtual
+  link inside the card.
+- **Didn't help:** a lower clock floor (`tile0/gt0/freq0/min_freq` 1200 → 400 MHz), since
+  the GPU cores are already idle. Runtime suspend can't help while a model is loaded,
+  because a compute context keeps the card awake.
+- **Fix:** enable PCIe ASPM in the BIOS (Gigabyte X870E, BIOS F3c). Afterwards
+  `cat /sys/bus/pci/devices/<e2ff bridge>/link/l1_aspm` reads 1 on both cards.
+- **Result:** fans dropped from ~1450 to ~90 rpm and VRAM from 46-50 °C to 28 °C at
+  idle. Speed didn't change: gpt-oss-120b across both cards still decodes at 88 tok/s,
+  and 384-390 / 47-48 tok/s prefill / decode at 36k tokens. One-card Qwen decodes at
+  74 tok/s. No AER errors or xe faults.
+- **Caveat:** with ASPM on, the cards' power telemetry (hwmon energy counters, and
+  `xpu-smi`, which feeds Grafana) is wrong at idle. Readings jump between 0, 5 and
+  30 W, and the package reads higher than the whole card. Use a wall meter for idle
+  numbers.
+
 ## vLLM on XPU
 
 ### TP=2 hangs both cards (fixed 2026-10-01)
